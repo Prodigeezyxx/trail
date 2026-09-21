@@ -4,10 +4,14 @@ TRAIL AFRICA — offline copies
 TWO DIFFERENT THINGS SIT IN THIS FOLDER. PICK THE RIGHT ONE.
 
 1) trail-offline.html        <- START HERE to put it on a USB stick
-   ONE file, 0.63 MB. Double-click it. That is the whole procedure.
+   ONE file, 0.65 MB. Double-click it. That is the whole procedure.
    JavaScript, CSS, both fonts and the Africa map geometry are all
-   inside that one file, so nothing is requested while it runs.
+   inside that one file, so the app boots with nothing requested.
    No install, no server, no internet, no admin rights.
+   NOTE: detailed facility layers (health, schools, power, markets)
+   need the folder build below — browsers cannot load separate
+   module chunks from file://, so the single file shows official
+   trails, issues and the map, but not the facility pins.
 
 2) trail-offline/            <- a FOLDER, for serving
    index.html plus an assets/ folder. This one does NOT work by
@@ -19,13 +23,14 @@ TWO DIFFERENT THINGS SIT IN THIS FOLDER. PICK THE RIGHT ONE.
        python -m http.server 8000
        open http://localhost:8000
 
-   Use this form for a web deployment, or when you want the offline
-   app cache (service workers only run over http/https).
+   Use this form for a web deployment, for the full facility layers,
+   or when you want the offline app cache (service workers only run
+   over http/https).
 
-WHAT WORKS OFFLINE
-------------------
-Everything: the map, the layers, the community issues and votes, the
-trail files, the packet export, and the report form.
+WHAT WORKS OFFLINE (folder build)
+---------------------------------
+Everything: the map, the facility layers, the community issues and
+votes, the trail files, the packet export, and the report form.
 
 WHAT NEEDS A CONNECTION
 -----------------------

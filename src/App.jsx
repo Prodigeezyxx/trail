@@ -3,13 +3,13 @@ import { geoMercator, geoOrthographic, geoPath, geoDistance, geoGraticule10, geo
 import {
   Search, Globe2, Map, Layers, Route, Files, BookOpen, ShieldCheck,
   HelpCircle, X, Check, CalendarDays, MapPin, Link2, FileText,
-  Download, Copy, ExternalLink, Leaf, Users, Compass, Crosshair, Menu,
+  Download, Copy, ExternalLink, Leaf, Users, Compass, Crosshair, Menu, Printer,
   ChevronDown, Plus, Minus, ArrowUpRight, ArrowRight, ThumbsUp, Flag,
   Lock, Trash2, Share2, MessageCircle, Send, AlertTriangle, Eye,
   ListChecks, Gavel, Droplets, Signal, RefreshCw, CircleCheck, Info,
 } from "lucide-react";
 import {
-  TRACKS, LAYERS as layers, RECORDS, SEED_FILES as seeds, dateLabel as short,
+  TRACKS, LAYERS as layers, RECORDS, SEED_FILES as seeds, ISSUE_SEEDS, dateLabel as short,
   placeLabel, stateAt as state, loadFiles, loadIssues, validIssue,
   packetText as packet, addDays, daysBetween, freshnessOf,
   STORAGE_KEY, ISSUE_KEY, REPORT_KEY, BUNDLE_DATE, VOTE_THRESHOLD,
@@ -19,14 +19,15 @@ import africaGeo from "./data/africa.json";
 import { IconSymbols } from "./Icons.jsx";
 import { layerToRecords, useManifest, getLayer } from "./layers.js";
 
-/* Which bundled data file backs which logical layer. */
+/* Which bundled data file backs which logical layer. Only files that exist in
+   src/data/layers/ are listed — earlier revisions referenced water-points.json
+   and grid-lines.json, which were never bundled, so those layers silently
+   rendered nothing while the UI implied coverage. */
 const LAYER_FILES = {
   "health": "health-facilities.json",
   "education": "education-facilities.json",
-  "water-points": "water-points.json",
   "power-plants": "power-plants.json",
   "markets": "markets.json",
-  "grid-lines": "grid-lines.json",
 };
 
 import {
@@ -230,7 +231,7 @@ function Freshness({ source }) {
   return <span className={"fresh " + f.state}><i />{f.label}</span>;
 }
 
-function PacketActions({ text, filename, onToast }) {
+function PacketActions({ text, filename, onToast, onPdf }) {
   const copy = async () => {
     try { await navigator.clipboard.writeText(text); onToast("Packet copied. Paste it into any app."); }
     catch { onToast("Clipboard blocked. Select the text and copy manually."); }
@@ -245,7 +246,8 @@ function PacketActions({ text, filename, onToast }) {
   const tg = () => { window.open("https://t.me/share/url?text=" + encodeURIComponent(text), "_blank", "noopener"); };
   return (
     <div className="packet-actions">
-      <button className="primary" onClick={download}><Download size={14} />Download</button>
+      {onPdf && <button className="primary" onClick={onPdf}><Printer size={14} />PDF</button>}
+      <button className="ghost" onClick={download}><Download size={14} />TXT</button>
       <button className="ghost" onClick={wa}><MessageCircle size={14} />WhatsApp</button>
       <button className="ghost" onClick={tg}><Send size={14} />Telegram</button>
       <button className="ghost" onClick={copy}><Copy size={14} />Copy</button>
@@ -280,7 +282,7 @@ function DataPointDetail({ point, onStartTrail }) {
         <div className="eyebrow">THE NEXT STEP</div>
         <p>{layerMeta?.evidence || "Use this location as evidence for a community trail — start one below."}</p>
       </div>
-      <button className="primary detail-cta" onClick={() => onStartTrail({ label: "Track this location", track: layerById(point.layer)?.track || "transparency", ask: layerById(point.layer)?.evidence || "Use this location as evidence for a community trail — start one below." })}><Route size={15} />Start a trail from here</button>
+      <button className="primary detail-cta" onClick={() => onStartTrail({ label: point.title, track: point.track || layerById(point.layer)?.track || "transparency", ask: layerById(point.layer)?.evidence || "Use this location as evidence for a community trail — start one below." }, point)}><Route size={15} />Start a trail from here</button>
     </>
   );
 }
@@ -314,6 +316,9 @@ export default function App() {
   const [issueFocus, setIssueFocus] = useState(null);
   const [report, setReport] = useState(null);
   const [reportCat, setReportCat] = useState("corruption");
+  // Rich print document for PDF export via the browser's print-to-PDF. Kept
+  // separate from the app DOM so @media print can hide the workspace.
+  const [printDoc, setPrintDoc] = useState(null);
 
   const today = date(day);
   const allTrails = useMemo(() => [
@@ -354,24 +359,34 @@ export default function App() {
 
   const layerRecords = useMemo(() => {
     const acc = [];
-    const occupied = []; // [lon, lat] cells already filled, to prevent stacking
+    const occupied = new Set(); // "lon,lat" cells already filled, to prevent stacking
     const CELL = 0.04;    // ~4.5 km — dense-city spread, keeps icons readable
     for (const [id, data] of Object.entries(layerData)) {
       if (!data) continue;
       const meta = manifest?.layers?.find((l) => l.file === LAYER_FILES[id]);
-      const recs = layerToRecords(data, { ...meta, id });
-      const shown = recs.filter((r) =>
-        country === "All Africa" || r.country === COUNTRIES.find((c) => geoNameOf(c) === r.country) || r.country === country
-      );
+      const recs = layerToRecords(data, { ...meta, id, track: layerById(id)?.track });
+      // Normalise both sides through the geo-name mapping: bundled OSM/WRI
+      // files use full names ("Cameroon") while the geometry abbreviates two
+      // ("Dem. Rep. Congo"). Comparing raw strings dropped DRC points.
+      const norm = (c) => geoNameOf(c);
+      const wanted = country === "All Africa" ? null : norm(country);
+      const shown = recs.filter((r) => {
+        if (!wanted) return true;
+        if (norm(r.country) === wanted) return true;
+        // Records whose file carries no country inherit the layer's footprint:
+        // keep them only in the unfiltered view rather than hiding them all.
+        return false;
+      });
       // Decimate to ~80 total across all layers — dense enough for a global
       // picture, sparse enough that individual icons stay distinct. Each pick
       // claims a 1-cell square so two layers never stack on one another.
       const step = Math.max(1, Math.floor(shown.length / 80));
       for (let i = 0; i < shown.length; i += step) {
         const r = shown[i];
-        const cell = [Math.round(r.coords[0] / CELL), Math.round(r.coords[1] / CELL)];
-        if (occupied.some(([lon, lat]) => lon === cell[0] && lat === cell[1])) continue;
-        occupied.push(cell);
+        if (!r.coords) continue;
+        const key = `${Math.round(r.coords[0] / CELL)},${Math.round(r.coords[1] / CELL)}`;
+        if (occupied.has(key)) continue;
+        occupied.add(key);
         acc.push(r);
       }
     }
@@ -406,6 +421,26 @@ export default function App() {
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
   }, []);
+  useEffect(() => {
+    const clear = () => setPrintDoc(null);
+    window.addEventListener("afterprint", clear);
+    return () => window.removeEventListener("afterprint", clear);
+  }, []);
+  useEffect(() => {
+    if (!printDoc) return;
+    // Let the sheet render before opening the dialog, so print preview has content.
+    const t = setTimeout(() => window.print(), 60);
+    return () => clearTimeout(t);
+  }, [printDoc]);
+  useEffect(() => {
+    // Arabic ships RTL layout; everything else stays LTR. Sample records and
+    // packets remain English in this build (see the notice in Explore) — a
+    // half-translated packet would be worse than an honest one.
+    try {
+      document.documentElement.dir = lang === "AR" ? "rtl" : "ltr";
+      document.documentElement.lang = lang.toLowerCase();
+    } catch { /* non-DOM environment */ }
+  }, [lang]);
 
   const projection = useMemo(
     () => geoMercator().fitExtent([[70, 58], [GW - 70, GH - 58]], FOOTPRINT),
@@ -422,7 +457,16 @@ export default function App() {
   };
 
   const vote = (id) => {
-    if (voted.includes(id)) { setVoted((p) => p.filter((v) => v !== id)); setIssues((p) => p.map((i) => (i.id === id ? { ...i, votes: Math.max(0, i.votes - 1) } : i))); return; }
+    if (voted.includes(id)) {
+      setVoted((p) => p.filter((v) => v !== id));
+      setIssues((p) => p.map((i) => {
+        if (i.id !== id) return i;
+        const votes = Math.max(0, i.votes - 1);
+        const status = i.status === "official" ? "official" : votes >= VOTE_THRESHOLD ? "community-verified" : "open";
+        return { ...i, votes, status };
+      }));
+      return;
+    }
     setVoted((p) => [...p, id]);
     setIssues((p) => p.map((i) => {
       if (i.id !== id) return i;
@@ -432,7 +476,10 @@ export default function App() {
     }));
   };
 
+  const canPromote = (issue) => issue && issue.status !== "official" && issue.votes >= PROMOTE_THRESHOLD;
+
   const promote = (issue) => {
+    if (!canPromote(issue)) { setToast(`An issue needs ${PROMOTE_THRESHOLD} votes before it can become an official trail.`); return; }
     const id = `TRL-${issue.id.replace("ISS-", "P")}`;
     setPromoted((p) => p.some((x) => x.id === id) ? p : [...p, {
       id, title: issue.title, place: issue.place, country: issue.country, coords: issue.coords,
@@ -450,17 +497,28 @@ export default function App() {
     setTab("Trails");
   };
 
-  const startTrail = (template) => {
-    const rec = (selected && find(selected)) || allTrails[0];
+  const startTrail = (template, baseOverride) => {
+    // baseOverride is the record the user explicitly acted on (a Trails-tab
+    // row, a map marker). Without it every "Track" button silently filed the
+    // currently-selected map item instead — the wrong place, wrong ask.
+    const rec = (selected && find(selected)) || null;
     const dp = dataPoint; // may be a data-layer point selected on the map
-    const base = dp || rec;
+    const dpById = baseOverride?.id ? layerRecords.find((x) => x.id === baseOverride.id) : null;
+    const base = baseOverride && (find(baseOverride.id) || dpById || baseOverride)
+      || dp || rec
+      || (baseOverride?.id ? layerRecords.find((x) => x.id === baseOverride.id) : null)
+      || allTrails[0];
+    if (!base) { setToast("Nothing to track yet — pick a record first."); return; }
     const f = {
       id: `${refCode().replace("TR-", "TRL-")}`,
-      recordId: base.id, title: template?.label || base.title,
+      recordId: base.id, title: template?.label && template.label !== "Track this" && template.label !== "Track this location" ? template.label : base.title,
       holder: base.holder || "To be identified", witness: base.witness || "Community reporter",
       created: today, due: addDays(today, 7), expires: addDays(today, 14),
       answered: null, links: [...links],
       ask: template?.ask || base.ask, track: template?.track || base.track || "transparency",
+      // Snapshot so the packet survives decimation/filter changes that drop
+      // the live layer record from view.
+      snapshot: { title: base.title, place: base.place, country: base.country, ask: base.ask, theme: base.theme, source: base.source },
     };
     setFiles((p) => [f, ...p]);
     setActive(f.id);
@@ -468,9 +526,45 @@ export default function App() {
     setLinks([]);
   };
 
-  const packetFor = (f) => {
-    const rec = find(f.recordId) || layerRecords.find((x) => x.id === f.recordId);
-    return packet(f, format === "packet" ? "print" : format, today, { record: rec });
+  const recordFor = (f) => find(f.recordId) || layerRecords.find((x) => x.id === f.recordId)
+    // Fall back to the snapshot stored at creation: layer decimation means
+    // the live record is frequently not in view when the packet is opened.
+    || (f.snapshot ? { id: f.recordId, title: f.snapshot.title, place: f.snapshot.place, country: f.snapshot.country, ask: f.snapshot.ask, theme: f.snapshot.theme, source: f.snapshot.source, layer: f.track } : undefined);
+
+  const packetFor = (f) => packet(f, format === "packet" ? "print" : format, today, { record: recordFor(f) });
+
+  /** Rich PDF payload: the full brief as structured sections for print-to-PDF. */
+  const printTrail = (f) => {
+    const rec = recordFor(f);
+    const src = rec?.source;
+    setPrintDoc({
+      kind: "trail",
+      ref: f.id,
+      title: rec?.title || f.title,
+      place: rec?.place || f.snapshot?.place || "",
+      theme: rec?.theme || "",
+      track: trackById(f.track)?.name || "",
+      holder: f.holder, witness: f.witness,
+      due: f.due, expires: f.expires, created: f.created,
+      state: state(f, today),
+      ask: rec?.ask || f.ask,
+      source: src ? { name: src.name, url: src.url, type: src.type, checked: src.checked, verified: src.verified, cadence: src.cadence } : null,
+      limitations: rec?.limitations || [],
+    });
+    setToast("Choose “Save as PDF” in the print dialog.");
+  };
+
+  const printReport = (rep) => {
+    if (!rep) return;
+    setPrintDoc({
+      kind: "report",
+      ref: rep.ref,
+      title: `Safe report · ${rep.category}`,
+      place: [rep.place, rep.country].filter(Boolean).join(", "),
+      created: rep.created, when: rep.when,
+      detail: rep.detail, outcome: rep.outcome,
+    });
+    setToast("Choose “Save as PDF” in the print dialog.");
   };
 
   const labels = { EN: ["Explore", "Trails", "Community", "Sources", "Report"], FR: ["Explorer", "Parcours", "Communauté", "Sources", "Signaler"], PT: ["Explorar", "Percursos", "Comunidade", "Fontes", "Denunciar"], AR: ["استكشف", "المسارات", "المجتمع", "المصادر", "الإبلاغ"] }[lang];
@@ -504,10 +598,11 @@ export default function App() {
   };
 
   return (
+    <>
     <div className="app">
       <IconSymbols />
       {nav && <div className="nav-scrim" onClick={() => setNav(false)} />}
-      <aside className={"sidebar " + (nav ? "open" : "")} inert={!!modal}>
+      <aside className={"sidebar " + (nav ? "open" : "")} inert={modal ? true : undefined}>
         <a href="#explore" aria-label="Trail home" onClick={() => setTab("Explore")}>
           <div className="brand"><span>TRAIL</span><b>AFRICA</b></div>
         </a>
@@ -560,7 +655,7 @@ export default function App() {
         </div>
       </aside>
 
-      <div className="main-shell" inert={!!modal}>
+      <div className="main-shell" inert={modal ? true : undefined}>
         <header>
           <div className="header-left">
             <button className="icon-btn mobile-menu" aria-label="Menu" onClick={() => setNav(true)}><Menu size={18} /></button>
@@ -591,7 +686,7 @@ export default function App() {
               <button aria-label="Language" onClick={() => setLangMenu(!langMenu)}><Globe2 size={14} />{lang}<ChevronDown size={11} /></button>
               {langMenu && (
                 <div className="language-menu">
-                  {["EN", "English"], ["FR", "Français"], ["PT", "Português"], ["AR", "العربية"].map(([v, n]) => (
+                  {[["EN", "English"], ["FR", "Français"], ["PT", "Português"], ["AR", "العربية"]].map(([v, n]) => (
                     <button key={v} onClick={() => { setLang(v); setLangMenu(false); }}>{n}{lang === v && <Check size={12} />}</button>
                   ))}
                 </div>
@@ -609,6 +704,9 @@ export default function App() {
                   <div className="eyebrow">— FROM INFORMATION TO ACTION</div>
                   <h1>Trusted civic information, across Africa.</h1>
                   <p>Find a fact, connect it to the office that holds the next step, and leave with a packet you can send.</p>
+                  {lang !== "EN" && (
+                    <p className="lang-note">Interface shown in {lang}. Sample records and packets remain in English in this build — a half-translated packet would be worse than an honest one.</p>
+                  )}
                 </div>
                 <div className="intro-cta-wrap">
                   <button className="primary" onClick={() => setModal("template")}><Plus size={16} />Start a trail</button>
@@ -767,7 +865,7 @@ export default function App() {
                             <div className="eyebrow">THE NEXT STEP</div>
                             <p>{r.ask}</p>
                           </div>
-                          <button className="primary detail-cta" onClick={() => setModal("template")}><Route size={15} />Start a trail from here</button>
+                          <button className="primary detail-cta" onClick={() => startTrail({ label: r.title, track: r.track, ask: r.ask }, r)}><Route size={15} />Start a trail from here</button>
                         </>
                       )}
                     </section>
@@ -841,19 +939,20 @@ export default function App() {
                           <button className="ghost sm" onClick={() => { setActive(f.id); setModal("file"); }}><FileText size={13} />Packet</button>
                         </>
                       ) : (
-                        <button className="ghost sm" onClick={() => startTrail({ label: "Track this", track: x.track || "transparency", ask: x.ask || "What is the next step for this location?" })}><Plus size={13} />Track</button>
+                        <button className="ghost sm" onClick={() => startTrail({ label: x.title, track: x.track || "transparency", ask: x.ask || "What is the next step for this location?" }, x)}><Plus size={13} />Track</button>
                       )}
                     </div>
                   );
                 })}
                 {files.filter((f) => !allTrails.some((x) => x.id === f.recordId)).map((f) => {
                   const rec = find(f.recordId) || layerRecords.find((x) => x.id === f.recordId);
+                  const place = rec?.place || f.snapshot?.place || "Unknown location";
                   return (
                     <div className="trail-row tracked" key={f.id}>
                       <span className="record-dot" style={{ background: layerColor(f.track) }} />
                       <div className="trail-row-mid">
                         <strong>{f.title}</strong>
-                        <small>{rec?.place || "Unknown location"} · {trackById(f.track)?.short}</small>
+                        <small>{place} · {trackById(f.track)?.short}</small>
                       </div>
                       <Badge value={state(f, today)} />
                       <button className="ghost sm" onClick={() => { setActive(f.id); setModal("file"); }}><FileText size={13} />Packet</button>
@@ -867,7 +966,7 @@ export default function App() {
                       const isUserFile = files.some((f) => f.recordId === x.id);
                       return (
                         <div className={"trail-row " + (isUserFile ? "tracked" : "untracked")} key={x.id} onClick={() => pick(x.id)}>
-                          <use href={`#li-${layerById(x.layer)?.icon}`} x="-6" y="-6" width="12" height="12" stroke={layerColor(x.layer)} fill={layerColor(x.layer)} />
+                          <span className="record-dot" style={{ background: layerColor(x.layer) }} />
                           <div className="trail-row-mid">
                             <strong>{x.title}</strong>
                             <small>{x.place} · {layerById(x.layer)?.name}</small>
@@ -875,7 +974,7 @@ export default function App() {
                           {isUserFile ? (
                             <Badge value={state(files.find((f) => f.recordId === x.id), today)} />
                           ) : (
-                            <button className="ghost sm" onClick={(e) => { e.stopPropagation(); startTrail({ label: "Track this location", track: layerById(x.layer)?.track || "transparency", ask: layerById(x.layer)?.evidence || "Use this location as evidence for a community trail." }) }}><Plus size={13} />Track</button>
+                            <button className="ghost sm" onClick={(e) => { e.stopPropagation(); startTrail({ label: x.title, track: x.track || layerById(x.layer)?.track || "transparency", ask: layerById(x.layer)?.evidence || "Use this location as evidence for a community trail." }, x) }}><Plus size={13} />Track</button>
                           )}
                         </div>
                       );
@@ -917,8 +1016,11 @@ export default function App() {
                         <ThumbsUp size={14} />{i.votes}
                       </button>
                       <span className="issue-when">{short(i.created)} · {i.reporter}</span>
-                      {i.status === "community-verified" && (
+                      {canPromote(i) && (
                         <button className="ghost sm" onClick={() => promote(i)}><ArrowUpRight size={13} />Promote to trail</button>
+                      )}
+                      {i.status === "community-verified" && !canPromote(i) && (
+                        <span className="issue-when">{PROMOTE_THRESHOLD - i.votes} more {PROMOTE_THRESHOLD - i.votes === 1 ? "vote" : "votes"} to promote</span>
                       )}
                       {i.status === "official" && <span className="official-tag"><CircleCheck size={12} />Official trail</span>}
                     </div>
@@ -1013,13 +1115,17 @@ export default function App() {
               <form className="report-form" onSubmit={(e) => {
                 e.preventDefault();
                 const v = Object.fromEntries(new FormData(e.currentTarget));
-                if (!v.detail?.trim() || !v.place?.trim()) { setToast("A place and a description are needed."); return; }
+                const detail = String(v.detail || "").trim(), place = String(v.place || "").trim();
+                if (!detail || !place) { setToast("A place and a description are needed."); return; }
+                if (detail.length > 4000 || place.length > 200) { setToast("That is too long — shorten it and try again."); return; }
+                const catId = String(v.category || reportCat);
+                const catLabel = REPORT_CATEGORIES.find((c) => c.id === catId)?.label || catId;
                 const rep = {
-                  ref: refCode(), category: v.category,
-                  place: v.place.trim(),
-                  country: (v.country || "").trim() || (country !== "All Africa" ? country : ""),
-                  when: v.when?.trim() || "Not stated", detail: v.detail.trim(),
-                  outcome: v.outcome?.trim() || "", created: today,
+                  ref: refCode(), category: catLabel, categoryId: catId,
+                  place,
+                  country: String(v.country || "").trim() || (country !== "All Africa" ? country : ""),
+                  when: String(v.when || "").trim() || "Not stated", detail,
+                  outcome: String(v.outcome || "").trim() || "", created: today,
                 };
                 setReports((p) => [rep, ...p]);
                 setReport(rep);
@@ -1027,9 +1133,9 @@ export default function App() {
               }}>
                 <div className="form-grid">
                   <label>What is this about?
-                    <select name="category" value={REPORT_CATEGORIES.find((c) => c.id === reportCat)?.label}
-                            onChange={(e) => setReportCat(REPORT_CATEGORIES.find((c) => c.label === e.target.value)?.id || "corruption")}>
-                      {REPORT_CATEGORIES.map((c) => <option key={c.id} value={c.label}>{c.label}</option>)}
+                    <select name="category" value={reportCat}
+                            onChange={(e) => setReportCat(e.target.value)}>
+                      {REPORT_CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
                     </select>
                   </label>
                   <label>Where (area or town, not an address)
@@ -1117,7 +1223,7 @@ export default function App() {
                     <small>Write this down. It is the only link to this record.</small>
                   </div>
                   <pre className="packet-preview">{reportPacket(report)}</pre>
-                  <PacketActions text={reportPacket(report)} filename={`${report.ref}.txt`} onToast={setToast} />
+                  <PacketActions text={reportPacket(report)} filename={`${report.ref}.txt`} onToast={setToast} onPdf={() => printReport(report)} />
                 </div>
               )}
 
@@ -1166,15 +1272,33 @@ export default function App() {
           <form onSubmit={(e) => {
             e.preventDefault();
             const v = Object.fromEntries(new FormData(e.currentTarget));
-            if (!v.title?.trim() || !v.detail?.trim() || !v.place?.trim()) { setToast("Title, place and description are needed."); return; }
-            const layer = v.layer || "services";
+            const title = String(v.title || "").trim(), detail = String(v.detail || "").trim(), place = String(v.place || "").trim();
+            if (!title || !detail || !place) { setToast("Title, place and description are needed."); return; }
+            const layer = String(v.layer || "services");
             const tmpl = TRAIL_TEMPLATES.find((t) => t.track === (layerById(layer)?.track)) ;
+            // Parse coordinates explicitly: `Number("") || fallback` would also
+            // swallow a legitimate 0. Validate ranges so bad input cannot park
+            // a marker off the globe where it renders as nothing.
+            const rawLon = String(v.lon ?? "").trim(), rawLat = String(v.lat ?? "").trim();
+            const lon = rawLon === "" ? 37.9 : Number(rawLon);
+            const lat = rawLat === "" ? -1.3 : Number(rawLat);
+            if (!Number.isFinite(lon) || !Number.isFinite(lat) || lon < -180 || lon > 180 || lat < -90 || lat > 90) {
+              setToast("Coordinates look wrong — longitude −180…180, latitude −90…90.");
+              return;
+            }
+            const existing = new Set([...issues.map((i) => i.id), ...ISSUE_SEEDS.map((i) => i.id)]);
+            let id = "";
+            for (let attempt = 0; attempt < 20; attempt++) {
+              const cand = `ISS-${String(Math.floor(Math.random() * 900) + 100)}`;
+              if (!existing.has(cand)) { id = cand; break; }
+            }
+            if (!id) id = `ISS-${Date.now().toString(36).toUpperCase()}`;
             const item = {
-              id: `ISS-${String(Math.floor(Math.random() * 900) + 100)}`,
-              title: v.title.trim(), place: v.place.trim(), country: v.country || "Kenya",
-              coords: [Number(v.lon) || 37.9, Number(v.lat) || -1.3],
+              id,
+              title, place, country: String(v.country || country !== "All Africa" ? (v.country || country) : "Kenya"),
+              coords: [lon, lat],
               track: layerById(layer)?.track ?? "transparency", layer,
-              detail: v.detail.trim(), evidence: v.evidence?.trim() || "",
+              detail, evidence: String(v.evidence || "").trim() || "",
               created: today, votes: 0, status: "open", reporter: "Anonymous",
               ask: tmpl?.ask,
             };
@@ -1208,28 +1332,32 @@ export default function App() {
         </Modal>
       )}
 
-      {modal === "issueView" && issueFocus && (
-        <Modal title={issueFocus.title} tag={`${issueFocus.id} · COMMUNITY ISSUE`} close={() => setModal(null)} wide>
+      {modal === "issueView" && issueFocus && (() => {
+        // Derive live state so the vote count updates inside the open modal.
+        const live = issues.find((x) => x.id === issueFocus.id) || issueFocus;
+        return (
+        <Modal title={live.title} tag={`${live.id} · COMMUNITY ISSUE`} close={() => setModal(null)} wide>
           <div className="issue-detail">
             <div className="detail-meta">
-              <div><MapPin size={13} />{issueFocus.place}, {issueFocus.country}</div>
-              <div><CalendarDays size={13} />Raised {short(issueFocus.created)} by {issueFocus.reporter}</div>
-              <div className="tag"><AlertTriangle size={11} />{issueFocus.status.replace("-", " ")}</div>
+              <div><MapPin size={13} />{live.place}, {live.country}</div>
+              <div><CalendarDays size={13} />Raised {short(live.created)} by {live.reporter}</div>
+              <div className="tag"><AlertTriangle size={11} />{live.status.replace("-", " ")}</div>
             </div>
-            <p>{issueFocus.detail}</p>
-            {issueFocus.evidence && <div className="issue-evidence"><FileText size={12} />{issueFocus.evidence}</div>}
+            <p>{live.detail}</p>
+            {live.evidence && <div className="issue-evidence"><FileText size={12} />{live.evidence}</div>}
             <div className="issue-foot">
-              <button className={"vote " + (voted.includes(issueFocus.id) ? "voted" : "")} onClick={() => vote(issueFocus.id)}>
-                <ThumbsUp size={14} />{issueFocus.votes} {voted.includes(issueFocus.id) ? "backed" : "back this"}
+              <button className={"vote " + (voted.includes(live.id) ? "voted" : "")} onClick={() => vote(live.id)}>
+                <ThumbsUp size={14} />{live.votes} {voted.includes(live.id) ? "backed" : "back this"}
               </button>
-              {issueFocus.status === "community-verified" && (
-                <button className="primary sm" onClick={() => { promote(issueFocus); setModal(null); }}><ArrowUpRight size={13} />Promote to official trail</button>
+              {canPromote(live) && (
+                <button className="primary sm" onClick={() => { promote(live); setModal(null); }}><ArrowUpRight size={13} />Promote to official trail</button>
               )}
             </div>
             <div className="notice"><Info size={14} /><span>Votes are counted on this device only. Without a relay, nobody else sees them.</span></div>
           </div>
         </Modal>
-      )}
+        );
+      })()}
 
       {modal === "file" && file && (
         <Modal title={file.title} tag={file.id} close={() => setModal(null)} wide>
@@ -1246,7 +1374,7 @@ export default function App() {
               ))}
             </div>
             <pre className="packet-preview">{packetFor(file)}</pre>
-            <PacketActions text={packetFor(file)} filename={`${file.id}-${format}.txt`} onToast={setToast} />
+            <PacketActions text={packetFor(file)} filename={`${file.id}-${format}.txt`} onToast={setToast} onPdf={() => printTrail(file)} />
           </div>
         </Modal>
       )}
@@ -1255,16 +1383,19 @@ export default function App() {
         <Modal title="Find a place, fact or trail" tag="SEARCH" close={() => setModal(null)} wide>
           <form className="search-form" onSubmit={(e) => { e.preventDefault();
             const v = Object.fromEntries(new FormData(e.currentTarget));
-            const q = (v.q || "").toLowerCase().trim(); if (!q) return;
-            const hit = allTrails.find((x) => (x.title + x.place + x.country + x.theme).toLowerCase().includes(q));
-            const iss = issues.find((i) => (i.title + i.place + i.detail).toLowerCase().includes(q));
-            if (hit) { setSelected(hit.id); setTab("Explore"); setModal(null); setToast(`Showing ${hit.title}`); }
+            const q = String(v.q || "").toLowerCase().trim(); if (!q) return;
+            const hay = (x) => `${x.title || ""} ${x.place || ""} ${x.country || ""} ${x.theme || ""}`.toLowerCase();
+            const hit = allTrails.find((x) => hay(x).includes(q));
+            const lay = !hit && layerRecords.find((x) => hay(x).includes(q));
+            const iss = !hit && !lay && issues.find((i) => `${i.title || ""} ${i.place || ""} ${i.detail || ""}`.toLowerCase().includes(q));
+            if (hit) { pick(hit.id); setTab("Explore"); setModal(null); setToast(`Showing ${hit.title}`); }
+            else if (lay) { pick(lay.id); setTab("Explore"); setModal(null); setToast(`Showing ${lay.title}`); }
             else if (iss) { setIssueFocus(iss); setModal("issueView"); }
             else setToast("Nothing matched. Try a place name or a word from the issue.");
           }}>
-            <input name="q" placeholder="Search trails, places, issues" autoFocus />
+            <input name="q" placeholder="Search trails, places, data points, issues" autoFocus />
           </form>
-          <div className="search-hint">Searches titles, places, tracks and community issues. Nothing leaves this device.</div>
+          <div className="search-hint">Searches titles, places, data-layer points and community issues. Nothing leaves this device.</div>
         </Modal>
       )}
 
@@ -1288,5 +1419,75 @@ export default function App() {
 
       {toast && <div className="toast">{toast}</div>}
     </div>
+
+    {/* Rich print sheet for PDF export — hidden on screen, the only thing
+        printed. Works offline with zero dependencies: the browser's own
+        print-to-PDF, so it runs from the USB single file too. */}
+    {printDoc && (
+      <div className="print-sheet" aria-hidden="true">
+        <div className="ps-mast">
+          <div className="ps-brand">TRAIL <b>AFRICA</b></div>
+          <div className="ps-ref">{printDoc.kind === "trail" ? "NEXT-STEP PACKET" : "SAFE REPORT"} · {printDoc.ref}</div>
+        </div>
+        <h1>{printDoc.title}</h1>
+        <div className="ps-place">{printDoc.place}</div>
+        {printDoc.kind === "trail" ? (
+          <>
+            {(printDoc.theme || printDoc.track) && <div className="ps-sub">{[printDoc.theme, printDoc.track].filter(Boolean).join(" · ")}</div>}
+            <div className="ps-grid">
+              <div><span>Proposed holder</span><b>{printDoc.holder}</b></div>
+              <div><span>Proposed witness</span><b>{printDoc.witness}</b></div>
+              <div><span>Response requested by</span><b>{printDoc.due}</b></div>
+              <div><span>Review closes</span><b>{printDoc.expires}</b></div>
+              <div><span>Opened</span><b>{printDoc.created}</b></div>
+              <div><span>State</span><b>{printDoc.state}</b></div>
+            </div>
+            <h2>What to do next</h2>
+            <p className="ps-ask">Ask exactly this: {printDoc.ask}</p>
+            <ol>
+              <li>Take the name and role of the person who receives it.</li>
+              <li>Ask for the answer in writing, with a reference number and a date.</li>
+              <li>If they cannot answer, ask who can — name, office, and when they sit.</li>
+              <li>Come back on the date you set. Silence is not an answer.</li>
+            </ol>
+            <h2>Source &amp; limits</h2>
+            {printDoc.source ? (
+              <>
+                <p>{printDoc.source.name}{printDoc.source.url ? ` — ${printDoc.source.url}` : " — no URL recorded"}</p>
+                <p>Class: {printDoc.source.type} · Checked: {printDoc.source.checked || "never"}{printDoc.source.verified ? " (checked by this project)" : " (NOT independently verified)"} · Cadence: {printDoc.source.cadence || "unknown"}</p>
+                {printDoc.limitations.length > 0 && (
+                  <ul>{printDoc.limitations.map((l) => <li key={l}>{l}</li>)}</ul>
+                )}
+                <p className="ps-dim">This packet records a question, not an established fact.</p>
+              </>
+            ) : <p>No source recorded for this item. Treat it as unverified.</p>}
+            <h2>Privacy</h2>
+            <p>No names, ID numbers, phone numbers or household locations should be written into this packet. You are sharing a question about a public service, not information about a person.</p>
+            <h2>Acknowledgement — fill in by hand</h2>
+            <div className="ps-lines">
+              <div>Received by: ______________________&nbsp;&nbsp; Role: ______________________&nbsp;&nbsp; Date: __________</div>
+              <div>Witness: ______________________&nbsp;&nbsp; Signature: ______________________&nbsp;&nbsp; Date: __________</div>
+            </div>
+            <h2>Follow-up</h2>
+            <p>At the next visit or meeting, quote {printDoc.ref} and ask: has a written answer been issued?{printDoc.due ? ` Response requested by ${printDoc.due}.` : ""}</p>
+          </>
+        ) : (
+          <>
+            <div className="ps-grid">
+              <div><span>Recorded</span><b>{printDoc.created}</b></div>
+              <div><span>When it happened</span><b>{printDoc.when}</b></div>
+            </div>
+            <h2>What happened (as written by the reporter)</h2>
+            <p>{printDoc.detail}</p>
+            <h2>What the reporter wants to happen</h2>
+            <p>{printDoc.outcome || "Not stated."}</p>
+            <h2>Safety</h2>
+            <p>This record was created on the reporter's own device. It has not been sent anywhere. It contains no name, phone number or identifier. Do not add any before forwarding. If you are forwarding this, send it through a channel you trust and delete it afterwards.</p>
+          </>
+        )}
+        <div className="ps-foot">Trail Africa · Data bundle {BUNDLE_DATE} · A fact should lead somewhere.</div>
+      </div>
+    )}
+    </>
   );
 }

@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
-import { geoMercator, geoOrthographic, geoPath, geoDistance, geoGraticule10, geoBounds, geoCentroid } from "d3-geo";
+import React from "react";
 
 /**
  * SVG icon symbols rendered once and referenced by markers via <use>.

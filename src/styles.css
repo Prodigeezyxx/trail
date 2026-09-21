@@ -205,6 +205,7 @@ main { padding: 22px 18px 60px; max-width: 1500px; }
   margin: 0 0 8px; max-width: 22ch;
 }
 .intro p { font-size: 13px; color: var(--muted); margin: 0; max-width: 54ch; }
+.lang-note { margin-top: 8px; font-size: 11.5px; color: var(--dim); border-left: 2px solid var(--line-2); padding-left: 9px; }
 .primary {
   display: inline-flex; align-items: center; gap: 7px;
   background: var(--green); color: #06210f;
@@ -806,3 +807,44 @@ main { padding: 22px 18px 60px; max-width: 1500px; }
 /* two-tone wordmark: TRAIL AFRICA */
 .brand b { margin-left: 6px; }
 .brand span, .brand b { letter-spacing: -1px; }
+
+/* ---------------- rich packet print sheet (PDF export) ----------------
+   Hidden on screen; when printing, the workspace is hidden and only this
+   sheet prints. Light paper styling so the PDF reads as a document, and it
+   works from the offline single file with zero dependencies. */
+@media screen {
+  .print-sheet { display: none; }
+}
+@media print {
+  .app, .toast, .overlay, .nav-scrim { display: none !important; }
+  body, html { background: #fff !important; }
+  .print-sheet {
+    display: block !important;
+    color: #111; background: #fff;
+    font-family: Georgia, "Times New Roman", serif;
+    padding: 8mm 4mm; max-width: 100%;
+  }
+  .print-sheet .ps-mast {
+    display: flex; justify-content: space-between; align-items: baseline;
+    border-bottom: 2.5px solid #111; padding-bottom: 6px; margin-bottom: 10px;
+  }
+  .print-sheet .ps-brand { font-family: Arial, Helvetica, sans-serif; font-weight: 800; letter-spacing: 0.5px; }
+  .print-sheet .ps-brand b { color: #1a7a3c; }
+  .print-sheet .ps-ref { font-family: Arial, Helvetica, sans-serif; font-size: 10px; letter-spacing: 1px; color: #444; }
+  .print-sheet h1 { font-size: 22px; margin: 0 0 2px; line-height: 1.2; }
+  .print-sheet .ps-place { font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #333; margin-bottom: 2px; }
+  .print-sheet .ps-sub { font-family: Arial, Helvetica, sans-serif; font-size: 11px; color: #555; margin-bottom: 10px; }
+  .print-sheet h2 {
+    font-family: Arial, Helvetica, sans-serif; font-size: 11px; letter-spacing: 1.4px;
+    text-transform: uppercase; color: #1a7a3c;
+    border-bottom: 1px solid #ccc; padding-bottom: 3px; margin: 14px 0 6px;
+  }
+  .print-sheet p, .print-sheet li { font-size: 12.5px; line-height: 1.55; margin: 4px 0; }
+  .print-sheet .ps-ask { font-weight: bold; border-left: 3px solid #1a7a3c; padding-left: 8px; }
+  .print-sheet .ps-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 18px; margin: 8px 0; }
+  .print-sheet .ps-grid span { display: block; font-family: Arial, Helvetica, sans-serif; font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: #666; }
+  .print-sheet .ps-grid b { font-family: Arial, Helvetica, sans-serif; font-size: 12px; }
+  .print-sheet .ps-dim { color: #555; font-style: italic; }
+  .print-sheet .ps-lines div { font-family: Arial, Helvetica, sans-serif; font-size: 12px; margin: 10px 0; }
+  .print-sheet .ps-foot { margin-top: 16px; border-top: 1px solid #999; padding-top: 6px; font-family: Arial, Helvetica, sans-serif; font-size: 10px; color: #555; }
+}

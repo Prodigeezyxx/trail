@@ -367,6 +367,8 @@ export function daysBetween(a, b) {
 const CADENCE_DAYS = { Daily: 2, Weekly: 10, Monthly: 45, Quarterly: 120, Annual: 400, "Ad hoc": 120 };
 export function freshnessOf(source, today) {
   if (!source || !source.checked) return { state: "unknown", days: null, label: "Never checked" };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(source.checked) || isNaN(new Date(`${source.checked}T12:00:00Z`).valueOf()))
+    return { state: "unknown", days: null, label: "Check date unknown" };
   const days = daysBetween(source.checked, today);
   const limit = CADENCE_DAYS[source.cadence] ?? 120;
   if (days <= limit) return { state: "fresh", days, label: `Checked ${dateLabel(source.checked)}` };
@@ -382,15 +384,20 @@ export function stateAt(file, date) {
   return "Awaiting response";
 }
 
+/** Data-layer point ids look like `health-12`, `markets-400` — they are not in
+ * RECORDS but they are legitimate trail targets with a stored snapshot. */
+export const isDataPointId = (id) => typeof id === "string" && /^(health|education|power-plants|markets)-\d+$/.test(id);
+const knownRecordId = (id) => Boolean(recordById(id)) || isDataPointId(id) || (typeof id === "string" && id.startsWith("TRL-"));
+
 export function validFile(f) {
   const iso = (value) => typeof value === "string" && /^20[2-9][0-9]-\d{2}-\d{2}$/.test(value) && !isNaN(new Date(value).valueOf());
   return (
-    f && recordById(f.recordId) &&
+    f && typeof f.recordId === "string" && knownRecordId(f.recordId) &&
     ["id", "title", "holder", "witness"].every((k) => typeof f[k] === "string" && f[k].trim().length > 0 && f[k].length <= 200) &&
     iso(f.created) && iso(f.due) && iso(f.expires) &&
     f.created <= f.due && f.due < f.expires &&
     (f.answered === null || (iso(f.answered) && f.answered >= f.created)) &&
-    Array.isArray(f.links) && f.links.every((id) => (recordById(id) || String(id).startsWith("ISS-")) && id !== f.recordId)
+    Array.isArray(f.links) && f.links.every((id) => (knownRecordId(id) || String(id).startsWith("ISS-")) && id !== f.recordId)
   );
 }
 
@@ -399,7 +406,12 @@ export function loadFiles(storage) {
     const raw = storage.getItem(STORAGE_KEY);
     if (!raw) return structuredClone(SEED_FILES);
     const files = JSON.parse(raw);
-    return Array.isArray(files) && files.every(validFile) ? files : structuredClone(SEED_FILES);
+    if (!Array.isArray(files)) return structuredClone(SEED_FILES);
+    // Keep every valid file instead of discarding the whole library because
+    // of one bad entry — the old every() check wiped a user's entire trail
+    // history the first time a data-layer point was tracked.
+    const kept = files.filter(validFile);
+    return kept.length === files.length ? kept : kept.length ? kept : structuredClone(SEED_FILES);
   } catch {
     return structuredClone(SEED_FILES);
   }
@@ -482,8 +494,25 @@ export function packetText(file, format, date, extras = {}) {
     includeReporterHint ? "If you are reporting harm, do not keep this copy on a shared or monitored device." : null,
     "",
   ].filter(Boolean);
+  const close = [
+    "AT THE OFFICE",
+    "1. Ask exactly the question written above. Read it out if you need to.",
+    "2. Take the name and role of the person who receives it.",
+    "3. Ask for the answer in writing, with a reference number and a date.",
+    "4. If they cannot answer, ask who can — name, office, and when they sit.",
+    "",
+    "ACKNOWLEDGEMENT (fill in by hand)",
+    `Received by: ______________________   Role: ______________________   Date: __________`,
+    `Witness: ______________________   Signature: ______________________   Date: __________`,
+    "",
+    "FOLLOW-UP",
+    file?.id ? `At the next visit or meeting, quote ${file.id} and ask: has a written answer been issued?` : null,
+    file?.due ? `Response requested by ${file.due}. Silence by that date is itself an answer — escalate to the witness.` : null,
+    "",
+    "A fact should lead somewhere. — Trail Africa",
+  ].filter((l) => l !== null);
 
-  const body = [...lines, ...provenance, ...safety].filter((l) => l !== null).join("\n");
+  const body = [...lines, ...provenance, ...safety, ...close].filter((l) => l !== null).join("\n");
 
   if (format === "whatsapp" || format === "short")
     return `*TRAIL · ${file?.id ?? ""}* ${title}\n${place}\n\n${record?.ask ?? "Please acknowledge this request in writing and give a reference number and a response date."}\n\nSource: ${src?.name ?? "not recorded"}${src?.url ? ` (${src.url})` : ""}\nChecked: ${src?.checked ?? "never"}${src?.verified ? "" : " · not independently verified"}\n\nKeep this message. A reply date matters more than a reply.`;

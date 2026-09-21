@@ -1,16 +1,27 @@
-import { readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { readdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { createHash } from "node:crypto";
-const assets = readdirSync("dist/assets").map((file) => "/assets/" + file);
+// Shell first: precache the app shell only. Layer point-chunks (health,
+// education, markets, power-plants — several MB of JSON-as-JS) are cached on
+// first use instead: precaching them makes install slow enough to fail on the
+// decade-old hardware this build targets, and they are only needed when the
+// user enables that layer.
+const allAssets = readdirSync("dist/assets").map((file) => "/assets/" + file);
+const isLayerChunk = (p) => /(health-facilities|education-facilities|power-plants|markets|admin-adm1)-[A-Za-z0-9_-]+\.js$/.test(p);
+const assets = allAssets.filter((p) => !isLayerChunk(p));
+const LAZY = allAssets.filter(isLayerChunk);
 const version = createHash("sha256")
   .update(readFileSync("dist/index.html"))
   .digest("hex")
   .slice(0, 12);
-const files = ["/", "/index.html", "/africa.json", "/favicon.svg", ...assets];
+const core = ["/", "/index.html", "/favicon.svg", ...assets];
+if (existsSync("dist/africa.json")) core.push("/africa.json");
+const files = core;
 writeFileSync(
   "dist/sw.js",
   `
 const CACHE = 'trail-${version}';
 const FILES = ${JSON.stringify(files)};
+const LAZY_FILES = ${JSON.stringify(LAZY)};
 const ENTRY = '/index.html';
 
 // Precache by URL, stripping Vary. The origin sends 'Vary: Origin' and the
@@ -76,6 +87,21 @@ self.addEventListener('fetch', event => {
   if (FILES.includes(url.pathname)) {
     event.respondWith(
       fromCache(url.pathname).then(hit => hit || fetch(request))
+    );
+    return;
+  }
+
+  // Layer chunks: cache-first with network fallback, stored on first use so
+  // the second visit (or the offline folder build) serves them from cache.
+  if (LAZY_FILES.includes(url.pathname)) {
+    event.respondWith(
+      fromCache(url.pathname).then(hit => hit || fetch(request).then(res => {
+        if (res && res.ok) {
+          const copy = res.clone();
+          caches.open(CACHE).then(cache => cache.put(new Request(url.pathname), copy)).catch(() => {});
+        }
+        return res;
+      }))
     );
   }
 });

@@ -72,7 +72,7 @@ each for a real channel:
 - **SMS** — one line for a basic phone
 - **Radio / meeting** — a script to read out, with a warning not to name individuals
 
-Every format can be downloaded, copied, or handed to WhatsApp or Telegram.
+Every format can be downloaded as TXT, copied, or handed to WhatsApp or Telegram — and the full brief exports as a formatted **PDF** (via the browser's print-to-PDF, so it works offline from the USB file too), with holder/witness acknowledgement lines and a follow-up section.
 
 ## It runs with no internet, from a USB stick
 
@@ -85,14 +85,18 @@ npm run build:portable
 
 | Output | Use |
 |---|---|
-| `portable/trail-offline.html` | **0.6 MB, one file.** Double-click it. No server, no install, no network. |
-| `portable/trail-offline/` | A folder to *serve* — `python -m http.server`. Adds the offline app cache. |
+| `portable/trail-offline.html` | **~0.65 MB, one file.** Double-click it. No server, no install, no network. Carries the app, Africa geometry and fonts; official trails, issues, packets and reports all work. |
+| `portable/trail-offline/` | A folder to *serve* — `python -m http.server`. Adds the facility layers (health, schools, power, markets) plus the offline app cache. |
 
-The single file works because nothing is requested at runtime: the Africa
+The single file boots because nothing it needs is requested at runtime: the Africa
 geometry is imported into the bundle rather than fetched, both fonts are inlined
 as data URIs, and every asset path is relative. That claim is tested, not assumed
 — the verification opens the file over `file://` and asserts a single network
-request (the document itself).
+request (the document itself). The facility point-layers are separate lazy
+chunks (up to ~8 MB) that browsers cannot load from `file://`, so they are a
+folder-build feature; the single file honestly omits the pins rather than
+pretending to include them. The service worker precaches the app shell and
+caches layer chunks on first use, so install stays fast on old hardware.
 
 The folder build **does not** work by double-clicking: browsers block module
 scripts and stylesheets loaded from `file://` because the page origin is `null`.

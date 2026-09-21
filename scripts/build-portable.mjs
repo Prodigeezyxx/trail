@@ -51,8 +51,13 @@ const assetsDir = join(SRC, "assets");
 const assetFiles = readdirSync(assetsDir);
 
 const findAsset = (ext) => assetFiles.find((f) => f.endsWith(ext));
-const jsFile = findAsset(".js");
-const cssFile = findAsset(".css");
+// The app shell is the index-* chunk. Layer point-chunks (health-*,
+// education-*, …) must NOT be picked here: inlining the wrong chunk produces
+// a single file that boots to a blank map. Layer chunks stay as separate
+// files and work in the servable folder build; the single file carries the
+// app, the Africa geometry and the fonts.
+const jsFile = assetFiles.find((f) => /^index-[A-Za-z0-9_-]+\.js$/.test(f)) || findAsset(".js");
+const cssFile = assetFiles.find((f) => /^index-[A-Za-z0-9_-]+\.css$/.test(f)) || findAsset(".css");
 
 if (!jsFile || !cssFile) {
   console.error("dist/assets must contain exactly one .js and one .css for the single-file build.");
@@ -116,8 +121,12 @@ TWO DIFFERENT THINGS SIT IN THIS FOLDER. PICK THE RIGHT ONE.
 1) trail-offline.html        <- START HERE to put it on a USB stick
    ONE file, ${(singleSize / 1024 / 1024).toFixed(2)} MB. Double-click it. That is the whole procedure.
    JavaScript, CSS, both fonts and the Africa map geometry are all
-   inside that one file, so nothing is requested while it runs.
+   inside that one file, so the app boots with nothing requested.
    No install, no server, no internet, no admin rights.
+   NOTE: detailed facility layers (health, schools, power, markets)
+   need the folder build below — browsers cannot load separate
+   module chunks from file://, so the single file shows official
+   trails, issues and the map, but not the facility pins.
 
 2) trail-offline/            <- a FOLDER, for serving
    index.html plus an assets/ folder. This one does NOT work by
@@ -129,13 +138,14 @@ TWO DIFFERENT THINGS SIT IN THIS FOLDER. PICK THE RIGHT ONE.
        python -m http.server 8000
        open http://localhost:8000
 
-   Use this form for a web deployment, or when you want the offline
-   app cache (service workers only run over http/https).
+   Use this form for a web deployment, for the full facility layers,
+   or when you want the offline app cache (service workers only run
+   over http/https).
 
-WHAT WORKS OFFLINE
-------------------
-Everything: the map, the layers, the community issues and votes, the
-trail files, the packet export, and the report form.
+WHAT WORKS OFFLINE (folder build)
+---------------------------------
+Everything: the map, the facility layers, the community issues and
+votes, the trail files, the packet export, and the report form.
 
 WHAT NEEDS A CONNECTION
 -----------------------
