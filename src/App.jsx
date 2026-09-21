@@ -256,7 +256,7 @@ function PacketActions({ text, filename, onToast }) {
 /* -------------------------------------------------------------------- app */
 
 /** Detail panel for an ingested data-layer point. */
-function DataPointDetail({ point }) {
+function DataPointDetail({ point, onStartTrail }) {
   if (!point) return null;
   const layerMeta = layerById(point.layer);
   return (
@@ -280,7 +280,7 @@ function DataPointDetail({ point }) {
         <div className="eyebrow">THE NEXT STEP</div>
         <p>{layerMeta?.evidence || "Use this location as evidence for a community trail — start one below."}</p>
       </div>
-      <button className="primary detail-cta" onClick={() => {}}><Route size={15} />Start a trail from here</button>
+      <button className="primary detail-cta" onClick={() => onStartTrail({ label: "Track this location", track: layerById(point.layer)?.track || "transparency", ask: layerById(point.layer)?.evidence || "Use this location as evidence for a community trail — start one below." })}><Route size={15} />Start a trail from here</button>
     </>
   );
 }
@@ -451,14 +451,16 @@ export default function App() {
   };
 
   const startTrail = (template) => {
-    const rec = find(selected) || allTrails[0];
+    const rec = (selected && find(selected)) || allTrails[0];
+    const dp = dataPoint; // may be a data-layer point selected on the map
+    const base = dp || rec;
     const f = {
       id: `${refCode().replace("TR-", "TRL-")}`,
-      recordId: rec.id, title: template?.label || rec.title,
-      holder: rec.holder, witness: rec.witness,
+      recordId: base.id, title: template?.label || base.title,
+      holder: base.holder || "To be identified", witness: base.witness || "Community reporter",
       created: today, due: addDays(today, 7), expires: addDays(today, 14),
       answered: null, links: [...links],
-      ask: template?.ask, track: template?.track || rec.track,
+      ask: template?.ask || base.ask, track: template?.track || base.track || "transparency",
     };
     setFiles((p) => [f, ...p]);
     setActive(f.id);
@@ -467,7 +469,7 @@ export default function App() {
   };
 
   const packetFor = (f) => {
-    const rec = find(f.recordId);
+    const rec = find(f.recordId) || layerRecords.find((x) => x.id === f.recordId);
     return packet(f, format === "packet" ? "print" : format, today, { record: rec });
   };
 
@@ -734,7 +736,7 @@ export default function App() {
                   {view !== "List" && (dataPoint || r) && (
                     <section className="detail-panel">
                       {dataPoint ? (
-                        <DataPointDetail point={dataPoint} />
+                        <DataPointDetail point={dataPoint} onStartTrail={startTrail} />
                       ) : (
                         <>
                           <div className="detail-head">
@@ -843,16 +845,26 @@ export default function App() {
                           <button className="ghost sm" onClick={() => { setActive(f.id); setModal("file"); }}><FileText size={13} />Packet</button>
                         </>
                       ) : (
-                        <button className="ghost sm" onClick={() => startTrail({ label: "Track this", ask: x.ask, track: x.track })}><Plus size={13} />Track</button>
+                        <button className="ghost sm" onClick={() => startTrail({ label: "Track this", track: x.track || "transparency", ask: x.ask || "What is the next step for this location?" })}><Plus size={13} />Track</button>
                       )}
                     </div>
                   );
                 })}
-                {allTrails.filter((x) =>
-                  enabled.includes(x.layer) &&
-                  (country === "All Africa" || x.country === country) &&
-                  (trackFilter === "all" || x.track === trackFilter)
-                ).length === 0 && <p className="empty">No trails in the current filters.</p>}
+                {files.filter((f) => !allTrails.some((x) => x.id === f.recordId)).map((f) => {
+                  const rec = find(f.recordId) || layerRecords.find((x) => x.id === f.recordId);
+                  return (
+                    <div className="trail-row tracked" key={f.id}>
+                      <span className="record-dot" style={{ background: layerColor(f.track) }} />
+                      <div className="trail-row-mid">
+                        <strong>{f.title}</strong>
+                        <small>{rec?.place || "Unknown location"} · {trackById(f.track)?.short}</small>
+                      </div>
+                      <Badge value={state(f, today)} />
+                      <button className="ghost sm" onClick={() => { setActive(f.id); setModal("file"); }}><FileText size={13} />Packet</button>
+                    </div>
+                  );
+                })}
+                {allTrails.filter((x) => enabled.includes(x.layer) && (country === "All Africa" || x.country === country) && (trackFilter === "all" || x.track === trackFilter)).length === 0 && files.length === 0 && <p className="empty">No trails in the current filters.</p>}
               </div>
             </section>
           )}
