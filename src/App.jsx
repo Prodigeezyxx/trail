@@ -54,6 +54,7 @@ import {
   STORAGE_KEY,
   validFile,
 } from "./data";
+import GodsEye from "./GodsEye";
 import "@fontsource-variable/dm-sans/wght.css";
 import "@fontsource-variable/manrope/wght.css";
 const records = RECORDS.map((r) => ({
@@ -608,6 +609,7 @@ export default function App() {
                   <div className="segmented">
                     {[
                       ["Map", Map],
+                      ["God's Eye", Globe2],
                       ["List", Files],
                     ].map(([name, I]) => (
                       <button
@@ -626,12 +628,31 @@ export default function App() {
                 className={"atlas " + (view === "List" ? "list-view" : "")}
               >
                 <div className="map-dots" />
-                {view === "Map" ? (
+                {view !== "List" ? (
                   <>
                     <div className="atlas-heading">
-                      <div className="eyebrow">THE CONNECTED CONTINENT</div>
-                      <p>Many places. Shared possibilities.</p>
+                      <div className="eyebrow">
+                        {view === "God's Eye"
+                          ? "AFRICA FROM ABOVE"
+                          : "THE CONNECTED CONTINENT"}
+                      </div>
+                      <p>
+                        {view === "God's Eye"
+                          ? "One continent. Whole, and turning."
+                          : "Many places. Shared possibilities."}
+                      </p>
                     </div>
+                    {view === "God's Eye" ? (
+                      <GodsEye
+                        geo={geo}
+                        records={visible}
+                        selected={selected}
+                        onPick={pick}
+                        layerColor={(id) =>
+                          layers.find((l) => l.id === id).color
+                        }
+                      />
+                    ) : (
                     <svg
                       className="africa-map"
                       viewBox="0 0 1060 675"
@@ -783,6 +804,7 @@ export default function App() {
                         })}
                       </g>
                     </svg>
+                    )}
                     {!geo && (
                       <div className="map-loading">
                         {mapError
@@ -860,6 +882,7 @@ export default function App() {
                         ))}
                       </div>
                     )}
+                    {view === "Map" && (
                     <div className="zoom">
                       <button
                         aria-label="Zoom in"
@@ -877,13 +900,16 @@ export default function App() {
                         <Minus size={17} />
                       </button>
                     </div>
+                    )}
                     <div className="attribution">
                       Natural Earth <span>·</span> Approximate civic places,
                       never people
                     </div>
-                    <div className="north">
-                      N<Compass size={25} strokeWidth={1} />
-                    </div>
+                    {view === "Map" && (
+                      <div className="north">
+                        N<Compass size={25} strokeWidth={1} />
+                      </div>
+                    )}
                     {connect && (
                       <div className="connect-banner">
                         <Link2 size={15} />

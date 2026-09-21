@@ -2987,3 +2987,104 @@ form > label,
     white-space: pre-wrap;
   }
 }
+
+/* ---------- God's Eye view ----------
+   The continent on a globe, drawn with d3-geo's orthographic projection over
+   the same local Natural Earth extract the flat map uses. No WebGL, no tile
+   server, no API key — it has to work from cache on a bad connection, which is
+   the whole point of the low-bandwidth claim in the footer. */
+.globe {
+  position: absolute;
+  inset: 0;
+}
+.globe-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.globe.dragging .globe-svg {
+  cursor: grabbing;
+}
+.globe-sphere {
+  filter: drop-shadow(0 26px 44px #4058342e);
+}
+.globe-graticule {
+  fill: none;
+  stroke: #aec49a;
+  stroke-width: 0.6;
+  opacity: 0.42;
+}
+.globe-limb {
+  fill: none;
+  stroke: #8fa87a;
+  stroke-width: 1.6;
+}
+.globe-controls {
+  position: absolute;
+  bottom: 43px;
+  left: 256px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 6px;
+  background: #fbfdf7;
+  border: 1px solid #dce7ce;
+  border-radius: 6px;
+  color: #829b6f;
+  font-size: 9px;
+  box-shadow: 0 2px 8px #5d76450a;
+}
+.globe-controls button {
+  padding: 6px 7px;
+  font-size: 9px;
+  color: #7c946b;
+  border-radius: 4px;
+}
+.globe-controls button:hover {
+  color: #5d794b;
+  background: #f1f6e9;
+}
+.globe-controls button[aria-pressed="true"] {
+  color: var(--rust);
+}
+.globe-readout {
+  padding: 0 6px;
+  font-variant-numeric: tabular-nums;
+  color: #97ac88;
+}
+.globe .marker .pin-label-bg {
+  fill: #f9fcf4;
+  opacity: 0.9;
+}
+@media (max-width: 768px) {
+  .globe-controls {
+    left: 20px;
+    right: 20px;
+    bottom: 43px;
+    flex-wrap: wrap;
+    justify-content: space-between;
+  }
+  .globe-readout {
+    display: none;
+  }
+}
+
+/* Land reads against the sea on the globe: the flat map's near-white country
+   stroke disappears entirely once the same geometry is curved onto a sphere. */
+.globe-svg .country {
+  fill: #c9dab4;
+  stroke: #8fa87a;
+  stroke-width: 1.15;
+}
+.globe-svg .c288,
+.globe-svg .c566,
+.globe-svg .c404,
+.globe-svg .c686,
+.globe-svg .c180,
+.globe-svg .c710,
+.globe-svg .c508 {
+  fill: #bdd0a5;
+}
