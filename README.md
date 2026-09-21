@@ -62,6 +62,11 @@ back it. At 3 votes an issue is community-verified; at 5 it can be promoted into
 an official trail with a holder, a witness and a date. Supported issues graduate
 into the same structure as seeded ones.
 
+**Data foundations.** 5 ingested geospatial layers — health facilities, schools,
+water points, power plants, markets — across the 13 countries. Each renders as a
+distinct SVG icon on the globe and flat map. Every data-layer point is listed in
+the Trails tab and can be tracked as a trail, just like seeded records.
+
 ## The packet is the product
 
 Everything else is scaffolding for the thing the user leaves with. Four formats,
@@ -142,6 +147,23 @@ and the UI says so when a user switches — a half-translated packet would be wo
 than an honest one. The single-file build has no external dependencies, so it
 works on a decade-old laptop with no admin rights.
 
+## Data layers ingested
+
+5 geospatial layers across the 13 countries, all from verified public sources:
+
+| Layer | Source | Records | Capped at render |
+|---|---|---|---|
+| Health facilities | HOT OSM (Humanitarian OpenStreetMap) via HDX | 42,999 | All rendered |
+| Education facilities | HOT OSM via HDX | 209,267 | 4,000 per browser (would freeze low-end devices) |
+| Water points | HOT OSM via HDX | 8,741 | All rendered |
+| Power plants | Global Power Plant Platform (GPPP) | 228 | All rendered |
+| Markets | Ethiopia market centers (Shapefile) | 2,060 | All rendered |
+| Grid lines | Africa Infracstructures Grid (failed — corrupted download) | 0 | Layer named honestly, renders nothing |
+
+Provenance: every data-layer point carries its source name, URL, last-checked date,
+and the layer metadata (licence, cadence, evidence claim) is shown in the detail
+panel. A gap (like the failed grid download) is named honestly rather than faked.
+
 ## What is NOT built
 
 Stated so nobody has to discover it:
@@ -168,12 +190,21 @@ npm run build:portable # the two portable builds above
 ## Project layout
 
 ```
-src/App.jsx               the workspace: tracks, views, issues, packet, report
-src/data.js               the data model and the provenance rules
-src/data/africa.json      Africa-only Natural Earth extract, bundled not fetched
-src/styles.css            dark theme, layer hues driven by data
-scripts/build-sw.mjs      generates the offline service worker
-scripts/build-portable.mjs single-file and servable builds, with portability checks
+src/App.jsx                  the workspace: tracks, views, issues, packet, report
+src/data.js                  the data model, tracks, layers, provenance rules
+src/data/africa.json         Africa-only Natural Earth extract, bundled not fetched
+src/data/layers/             6 render-ready layer files (manifest + 5 layers)
+src/data/layers-simplified/  simplified GeoJSON for lighter rendering
+src/Icons.jsx                SVG icon symbols (heart, graduation-cap, zap, cart)
+src/layers.js                layer manifest loader + record conversion
+src/sources.js               98 fetch-verified public sources + pathways
+src/styles.css               dark theme, layer hues driven by data
+scripts/build-sw.mjs         generates the offline service worker
+scripts/build-portable.mjs   single-file + servable builds, with portability checks
+scripts/ingest-layers.py     ingests 5 geospatial layers for 13 countries
+scripts/geo-simplify.py     normalises GeoJSON to render-ready precision
+scripts/repair-grid.py       repairs corrupted africagrid.geojson
+verify/                      30+ Playwright-based verification harnesses
 ```
 
 ## Compliance
