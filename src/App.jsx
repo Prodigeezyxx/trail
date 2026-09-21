@@ -825,11 +825,7 @@ export default function App() {
               <h1>Every file. <span>A way forward.</span></h1>
               <p className="page-sub">All trails and data-layer records on the map. Click any row to open it.</p>
               <div className="trails-list">
-                {allTrails.filter((x) =>
-                  enabled.includes(x.layer) &&
-                  (country === "All Africa" || x.country === country) &&
-                  (trackFilter === "all" || x.track === trackFilter)
-                ).map((x) => {
+                {visible.map((x) => {
                   const isUserFile = files.some((f) => f.recordId === x.id);
                   const f = files.find((f) => f.recordId === x.id);
                   return (
@@ -864,7 +860,29 @@ export default function App() {
                     </div>
                   );
                 })}
-                {allTrails.filter((x) => enabled.includes(x.layer) && (country === "All Africa" || x.country === country) && (trackFilter === "all" || x.track === trackFilter)).length === 0 && files.length === 0 && <p className="empty">No trails in the current filters.</p>}
+                {layerRecords.length > 0 && (
+                  <>
+                    <div className="trails-section-label">DATA FOUNDATIONS</div>
+                    {layerRecords.map((x) => {
+                      const isUserFile = files.some((f) => f.recordId === x.id);
+                      return (
+                        <div className={"trail-row " + (isUserFile ? "tracked" : "untracked")} key={x.id} onClick={() => pick(x.id)}>
+                          <use href={`#li-${layerById(x.layer)?.icon}`} x="-6" y="-6" width="12" height="12" stroke={layerColor(x.layer)} fill={layerColor(x.layer)} />
+                          <div className="trail-row-mid">
+                            <strong>{x.title}</strong>
+                            <small>{x.place} · {layerById(x.layer)?.name}</small>
+                          </div>
+                          {isUserFile ? (
+                            <Badge value={state(files.find((f) => f.recordId === x.id), today)} />
+                          ) : (
+                            <button className="ghost sm" onClick={(e) => { e.stopPropagation(); startTrail({ label: "Track this location", track: layerById(x.layer)?.track || "transparency", ask: layerById(x.layer)?.evidence || "Use this location as evidence for a community trail." }) }}><Plus size={13} />Track</button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </>
+                )}
+                {visible.length === 0 && layerRecords.length === 0 && files.filter((f) => !allTrails.some((x) => x.id === f.recordId)).length === 0 && <p className="empty">No trails in the current filters.</p>}
               </div>
             </section>
           )}

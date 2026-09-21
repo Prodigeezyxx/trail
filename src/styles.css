@@ -366,6 +366,12 @@ main { padding: 22px 18px 60px; max-width: 1500px; }
 .trail-row.untracked strong { color: var(--dim); }
 .trail-row .trail-row-mid { flex: 1; min-width: 0; }
 .trail-row .trail-row-mid small { font-size: 10.5px; }
+.trail-row { cursor: pointer; }
+.trail-row .ghost.sm { pointer-events: auto; }
+.trails-section-label {
+  font-size: 10px; letter-spacing: 0.5px; text-transform: uppercase;
+  color: var(--dim); padding: 6px 12px 2px;
+}
 
 /* detail panel */
 .detail-panel {
