@@ -84,7 +84,19 @@ Two directions of travel:
 - What we will **not** sell: user data (there is none — no server, no
   analytics), placement in trails, or unverified safety claims.
 
-## 8. Roadmap
+## 8. How it was built
+
+Solo-built with a pipeline of AI tools, each picked for what it is good at:
+
+1. **Research — ChatGPT + Grok.** Once the idea was set, both were used to research the problem space, sources, and routes before any code existed.
+2. **Planning + skeleton — Hermes agent (running DeepSeek V4 Flash).** Hermes acted as the harness for planning and organization, with the open-source DeepSeek model doing the work, and produced the project skeleton.
+3. **UI + complex polish — GPT-5.5 Astra.** The interface and the harder polish passes came from this stage.
+4. **Feature build-out — back to DeepSeek.** Remaining features were built and finished here.
+5. **Final verification + production pass — Meta Muse Spark 1.3 via OpenCode.** The finished app went through a full audit: data-loss bugs, wrong trail targets, phantom layer files, dead bundle weight, and the PDF packet export all came out of this pass, each verified by build and tests.
+
+Nothing in the app generates content at runtime. All data is fixed and human-curated, verification statuses reflect real fetch checks, and safety wording was written deliberately.
+
+## 9. Roadmap
 
 1. **Relay (opt-in):** sync votes/issues between devices without breaking the
    offline-first promise.
@@ -94,7 +106,7 @@ Two directions of travel:
 4. **Full i18n:** records/packets beyond English with translator review — never
    machine-translated safety text.
 
-## 9. The ask
+## 10. The ask
 
 Seed support to ship the relay + one verified country deployment (Kenya:
 county water + cohesion reporting routes already mapped), and to run the next
