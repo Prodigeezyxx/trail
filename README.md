@@ -9,6 +9,9 @@ that holds the next step — and leaves with a packet they can send, print, broa
 or carry on a USB stick.
 
 Built for the **OSF × Andela hackathon**, September 2026.
+Submitted under **Transparency & Accountability**.
+
+**Live demo:** https://trail-africa.web.app/ · **Offline single file:** `portable/trail-offline.html` (double-click, no server)
 
 ## Scope
 
@@ -38,8 +41,12 @@ to navigate. Trail closes the last part: it turns information into a next step.
 
 ## Tracks
 
-The workspace is organised around the three challenge areas, and every record
-belongs to one:
+This entry is submitted under **Transparency & Accountability**: turning
+published facts into written questions with named recipients and response
+dates. The workspace itself is organised around all three challenge areas,
+and every record belongs to one — a water dispute or a safety report still
+enters as a citizen asking a named office for a written answer, which is
+accountability in its most practical form:
 
 | Track | What it does here |
 |---|---|
@@ -62,8 +69,8 @@ back it. At 3 votes an issue is community-verified; at 5 it can be promoted into
 an official trail with a holder, a witness and a date. Supported issues graduate
 into the same structure as seeded ones.
 
-**Data foundations.** 5 ingested geospatial layers — health facilities, schools,
-water points, power plants, markets — across the 13 countries. Each renders as a
+**Data foundations.** 4 bundled geospatial layers — health facilities, schools,
+power plants, markets — across the 13 countries. Each renders as a
 distinct SVG icon on the globe and flat map. Every data-layer point is listed in
 the Trails tab and can be tracked as a trail, just like seeded records.
 
@@ -149,22 +156,27 @@ and the UI says so when a user switches — a half-translated packet would be wo
 than an honest one. The single-file build has no external dependencies, so it
 works on a decade-old laptop with no admin rights.
 
-## Data layers ingested
+## Data layers bundled
 
-5 geospatial layers across the 13 countries, all from verified public sources:
+4 geospatial layers across the 13 countries, all from verified public sources —
+these are the files actually shipped in the app bundle:
 
-| Layer | Source | Records | Capped at render |
+| Layer | Source | Licence | Points in bundle |
 |---|---|---|---|
-| Health facilities | HOT OSM (Humanitarian OpenStreetMap) via HDX | 42,999 | All rendered |
-| Education facilities | HOT OSM via HDX | 209,267 | 4,000 per browser (would freeze low-end devices) |
-| Water points | HOT OSM via HDX | 8,741 | All rendered |
-| Power plants | Global Power Plant Platform (GPPP) | 228 | All rendered |
-| Markets | Ethiopia market centers (Shapefile) | 2,060 | All rendered |
-| Grid lines | Africa Infracstructures Grid (failed — corrupted download) | 0 | Layer named honestly, renders nothing |
+| Health facilities | HOT OSM (Humanitarian OpenStreetMap) via HDX | ODbL 1.0 | 8,000 |
+| Schools | HOT OSM via HDX | ODbL 1.0 | 4,000 |
+| Power plants | WRI Global Power Plant Database | CC BY 4.0 | 228 |
+| Market centres | Ethiopia market centers via HDX | CC0 1.0 | 2,060 |
 
-Provenance: every data-layer point carries its source name, URL, last-checked date,
-and the layer metadata (licence, cadence, evidence claim) is shown in the detail
-panel. A gap (like the failed grid download) is named honestly rather than faked.
+The map decimates to ~80 visible pins so individual icons stay readable on
+low-end devices; every pin is listed in the Trails tab and trackable as a trail.
+Also in-repo but **not** bundled: `grid-lines.json` (4,000 features, repaired —
+not yet wired into the bundle) and `admin-adm1.json` (229 boundaries, kept as
+source). Unbundled means unshipped, not hidden.
+
+Provenance: every data-layer point carries its source name, last-checked date,
+and the layer metadata is shown in the detail panel. A gap is named honestly
+rather than faked.
 
 ## What is NOT built
 
@@ -189,13 +201,15 @@ npm run build          # dist/ with the offline service worker
 npm run build:portable # the two portable builds above
 ```
 
+Live deployment (Firebase hosting, serves `dist/`): https://trail-africa.web.app/
+
 ## Project layout
 
 ```
 src/App.jsx                  the workspace: tracks, views, issues, packet, report
 src/data.js                  the data model, tracks, layers, provenance rules
 src/data/africa.json         Africa-only Natural Earth extract, bundled not fetched
-src/data/layers/             6 render-ready layer files (manifest + 5 layers)
+src/data/layers/             bundled point layers (manifest + health, schools, power, markets)
 src/data/layers-simplified/  simplified GeoJSON for lighter rendering
 src/Icons.jsx                SVG icon symbols (heart, graduation-cap, zap, cart)
 src/layers.js                layer manifest loader + record conversion
