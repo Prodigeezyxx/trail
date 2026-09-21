@@ -1,0 +1,86 @@
+{
+  "built": "2026-09-21",
+  "countries": [
+    "Cameroon",
+    "DR Congo",
+    "Ethiopia",
+    "Ghana",
+    "Kenya",
+    "Mozambique",
+    "Nigeria",
+    "Rwanda",
+    "Senegal",
+    "South Africa",
+    "Tanzania",
+    "Uganda",
+    "Zambia"
+  ],
+  "layers": [
+    {
+      "file": "admin-adm1.json",
+      "features": 229,
+      "kb": 5518.9,
+      "label": "Administrative ADM1 boundaries",
+      "source": "geoBoundaries gbOpen",
+      "licence": "Mixed open per country",
+      "geometry": "Polygon",
+      "layers": [
+        "services",
+        "budget",
+        "water",
+        "health",
+        "food",
+        "land",
+        "elections"
+      ]
+    },
+    {
+      "file": "health-facilities.json",
+      "features": 42999,
+      "kb": 28538.5,
+      "label": "Health facilities",
+      "source": "HOT OSM (OpenStreetMap extract on HDX)",
+      "licence": "ODbL 1.0",
+      "geometry": "Point",
+      "layers": [
+        "health"
+      ]
+    },
+    {
+      "file": "education-facilities.json",
+      "features": 209267,
+      "kb": 135975.8,
+      "label": "Schools",
+      "source": "HOT OSM (OpenStreetMap extract on HDX)",
+      "licence": "ODbL 1.0",
+      "geometry": "Point",
+      "layers": [
+        "education"
+      ]
+    },
+    {
+      "file": "power-plants.json",
+      "features": 228,
+      "kb": 46.6,
+      "label": "Power plants",
+      "source": "WRI Global Power Plant Database v1.3.0",
+      "licence": "CC BY 4.0",
+      "geometry": "Point",
+      "layers": [
+        "energy"
+      ]
+    },
+    {
+      "file": "markets.json",
+      "features": 2060,
+      "kb": 253.6,
+      "label": "Markets",
+      "source": "Ethiopia Market Centers (HDX)",
+      "licence": "CC0 1.0",
+      "geometry": "Point",
+      "layers": [
+        "food"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,368 @@
+[
+  {
+    "stage": "boundaries",
+    "name": "CMR ADM1",
+    "ok": true,
+    "detail": "10 units"
+  },
+  {
+    "stage": "boundaries",
+    "name": "COD ADM1",
+    "ok": true,
+    "detail": "26 units"
+  },
+  {
+    "stage": "boundaries",
+    "name": "ETH ADM1",
+    "ok": true,
+    "detail": "11 units"
+  },
+  {
+    "stage": "boundaries",
+    "name": "GHA ADM1",
+    "ok": true,
+    "detail": "16 units"
+  },
+  {
+    "stage": "boundaries",
+    "name": "KEN ADM1",
+    "ok": true,
+    "detail": "47 units"
+  },
+  {
+    "stage": "boundaries",
+    "name": "MOZ ADM1",
+    "ok": true,
+    "detail": "10 units"
+  },
+  {
+    "stage": "boundaries",
+    "name": "NGA ADM1",
+    "ok": true,
+    "detail": "37 units"
+  },
+  {
+    "stage": "boundaries",
+    "name": "RWA ADM1",
+    "ok": true,
+    "detail": "5 units"
+  },
+  {
+    "stage": "boundaries",
+    "name": "SEN ADM1",
+    "ok": true,
+    "detail": "14 units"
+  },
+  {
+    "stage": "boundaries",
+    "name": "ZAF ADM1",
+    "ok": true,
+    "detail": "9 units"
+  },
+  {
+    "stage": "boundaries",
+    "name": "TZA ADM1",
+    "ok": true,
+    "detail": "30 units"
+  },
+  {
+    "stage": "boundaries",
+    "name": "UGA ADM1",
+    "ok": true,
+    "detail": "4 units"
+  },
+  {
+    "stage": "boundaries",
+    "name": "ZMB ADM1",
+    "ok": true,
+    "detail": "10 units"
+  },
+  {
+    "stage": "write",
+    "name": "admin-adm1",
+    "ok": true,
+    "detail": "229 features, 5,518.9 KB"
+  },
+  {
+    "stage": "boundaries",
+    "name": "CMR ADM2",
+    "ok": true,
+    "detail": "60 units"
+  },
+  {
+    "stage": "boundaries",
+    "name": "COD ADM2",
+    "ok": true,
+    "detail": "189 units"
+  },
+  {
+    "stage": "boundaries",
+    "name": "ETH ADM2",
+    "ok": true,
+    "detail": "74 units"
+  },
+  {
+    "stage": "boundaries",
+    "name": "GHA ADM2",
+    "ok": true,
+    "detail": "260 units"
+  },
+  {
+    "stage": "boundaries",
+    "name": "KEN ADM2",
+    "ok": true,
+    "detail": "290 units"
+  },
+  {
+    "stage": "boundaries",
+    "name": "MOZ ADM2",
+    "ok": true,
+    "detail": "159 units"
+  },
+  {
+    "stage": "boundaries",
+    "name": "NGA ADM2",
+    "ok": true,
+    "detail": "774 units"
+  },
+  {
+    "stage": "boundaries",
+    "name": "RWA ADM2",
+    "ok": true,
+    "detail": "30 units"
+  },
+  {
+    "stage": "boundaries",
+    "name": "SEN ADM2",
+    "ok": true,
+    "detail": "45 units"
+  },
+  {
+    "stage": "boundaries",
+    "name": "ZAF ADM2",
+    "ok": true,
+    "detail": "52 units"
+  },
+  {
+    "stage": "boundaries",
+    "name": "TZA ADM2",
+    "ok": true,
+    "detail": "170 units"
+  },
+  {
+    "stage": "boundaries",
+    "name": "UGA ADM2",
+    "ok": true,
+    "detail": "151 units"
+  },
+  {
+    "stage": "boundaries",
+    "name": "ZMB ADM2",
+    "ok": true,
+    "detail": "116 units"
+  },
+  {
+    "stage": "write",
+    "name": "admin-adm2",
+    "ok": true,
+    "detail": "2370 features, 22,286.4 KB"
+  },
+  {
+    "stage": "facilities",
+    "name": "CMR health_facilities",
+    "ok": true,
+    "detail": "2104"
+  },
+  {
+    "stage": "facilities",
+    "name": "COD health_facilities",
+    "ok": true,
+    "detail": "5292"
+  },
+  {
+    "stage": "facilities",
+    "name": "ETH health_facilities",
+    "ok": true,
+    "detail": "1159"
+  },
+  {
+    "stage": "facilities",
+    "name": "GHA health_facilities",
+    "ok": true,
+    "detail": "2503"
+  },
+  {
+    "stage": "facilities",
+    "name": "KEN health_facilities",
+    "ok": true,
+    "detail": "2758"
+  },
+  {
+    "stage": "facilities",
+    "name": "MOZ health_facilities",
+    "ok": true,
+    "detail": "1197"
+  },
+  {
+    "stage": "facilities",
+    "name": "NGA health_facilities",
+    "ok": true,
+    "detail": "7696"
+  },
+  {
+    "stage": "facilities",
+    "name": "RWA health_facilities",
+    "ok": true,
+    "detail": "1372"
+  },
+  {
+    "stage": "facilities",
+    "name": "SEN health_facilities",
+    "ok": true,
+    "detail": "1972"
+  },
+  {
+    "stage": "facilities",
+    "name": "ZAF health_facilities",
+    "ok": false,
+    "detail": "HTTP 404"
+  },
+  {
+    "stage": "facilities",
+    "name": "TZA health_facilities",
+    "ok": true,
+    "detail": "7240"
+  },
+  {
+    "stage": "facilities",
+    "name": "UGA health_facilities",
+    "ok": true,
+    "detail": "7894"
+  },
+  {
+    "stage": "facilities",
+    "name": "ZMB health_facilities",
+    "ok": true,
+    "detail": "1812"
+  },
+  {
+    "stage": "write",
+    "name": "health-facilities",
+    "ok": true,
+    "detail": "42999 features, 28,538.5 KB"
+  },
+  {
+    "stage": "facilities",
+    "name": "CMR education_facilities",
+    "ok": true,
+    "detail": "10206"
+  },
+  {
+    "stage": "facilities",
+    "name": "COD education_facilities",
+    "ok": true,
+    "detail": "9435"
+  },
+  {
+    "stage": "facilities",
+    "name": "ETH education_facilities",
+    "ok": true,
+    "detail": "6477"
+  },
+  {
+    "stage": "facilities",
+    "name": "GHA education_facilities",
+    "ok": true,
+    "detail": "7494"
+  },
+  {
+    "stage": "facilities",
+    "name": "KEN education_facilities",
+    "ok": true,
+    "detail": "14844"
+  },
+  {
+    "stage": "facilities",
+    "name": "MOZ education_facilities",
+    "ok": true,
+    "detail": "2091"
+  },
+  {
+    "stage": "facilities",
+    "name": "NGA education_facilities",
+    "ok": true,
+    "detail": "5984"
+  },
+  {
+    "stage": "facilities",
+    "name": "RWA education_facilities",
+    "ok": true,
+    "detail": "1408"
+  },
+  {
+    "stage": "facilities",
+    "name": "SEN education_facilities",
+    "ok": true,
+    "detail": "4379"
+  },
+  {
+    "stage": "facilities",
+    "name": "ZAF education_facilities",
+    "ok": false,
+    "detail": "HTTP 404"
+  },
+  {
+    "stage": "facilities",
+    "name": "TZA education_facilities",
+    "ok": true,
+    "detail": "103030"
+  },
+  {
+    "stage": "facilities",
+    "name": "UGA education_facilities",
+    "ok": true,
+    "detail": "34998"
+  },
+  {
+    "stage": "facilities",
+    "name": "ZMB education_facilities",
+    "ok": true,
+    "detail": "8921"
+  },
+  {
+    "stage": "write",
+    "name": "education-facilities",
+    "ok": true,
+    "detail": "209267 features, 135,975.8 KB"
+  },
+  {
+    "stage": "power",
+    "name": "WRI GPPD",
+    "ok": true,
+    "detail": "34936 rows global -> 228 in scope"
+  },
+  {
+    "stage": "write",
+    "name": "power-plants",
+    "ok": true,
+    "detail": "228 features, 46.6 KB"
+  },
+  {
+    "stage": "markets",
+    "name": "ethiopia-market-centers",
+    "ok": true,
+    "detail": "2060 markets"
+  },
+  {
+    "stage": "write",
+    "name": "markets",
+    "ok": true,
+    "detail": "2060 features, 253.6 KB"
+  },
+  {
+    "stage": "grid",
+    "name": "ESMAP Africa grid",
+    "ok": false,
+    "detail": "Extra data: line 62008 column 1 (char 43065885)"
+  }
+]

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { geoMercator, geoOrthographic, geoPath, geoDistance, geoGraticule10, geoBounds, geoCentroid } from "d3-geo";
+import { geoMercator, geoOrthographic, geoPath, geoDistance, geoGraticule10, geoCentroid } from "d3-geo";
 import {
   Search, Globe2, Map, Layers, Route, Files, BookOpen, ShieldCheck,
   HelpCircle, X, Check, CalendarDays, MapPin, Link2, FileText,
@@ -16,6 +16,19 @@ import {
   PROMOTE_THRESHOLD, trackById, layerById, COUNTRIES, geoNameOf,
 } from "./data";
 import africaGeo from "./data/africa.json";
+import { IconSymbols } from "./Icons.jsx";
+import { layerToRecords, useManifest, getLayer } from "./layers.js";
+
+/* Which bundled data file backs which logical layer. */
+const LAYER_FILES = {
+  "health": "health-facilities.json",
+  "education": "education-facilities.json",
+  "water-points": "water-points.json",
+  "power-plants": "power-plants.json",
+  "markets": "markets.json",
+  "grid-lines": "grid-lines.json",
+};
+
 import {
   DATA_SOURCES, PATHWAYS_BY_CATEGORY, SAFETY_GUIDES, SOURCE_WARNINGS,
   sourceById, verifiedCount,
@@ -76,10 +89,6 @@ const REPORT_CATEGORIES = [
 
 const GW = 1060, GH = 675, GCX = GW / 2, GCY = GH / 2;
 
-/**
- * The countries this build covers, as geometry. Derived once: it drives the
- * view fitting, the globe rotation and which outlines are drawn as active.
- */
 const COVERED = africaGeo.features.filter((f) =>
   COUNTRIES.some((c) => geoNameOf(c) === f.properties.name));
 const CONTEXT = africaGeo.features.filter((f) =>
@@ -88,11 +97,6 @@ const FOOTPRINT = { type: "FeatureCollection", features: COVERED };
 const FOOTPRINT_CENTRE = geoCentroid(FOOTPRINT);
 const HOME = [-FOOTPRINT_CENTRE[0], -FOOTPRINT_CENTRE[1]];
 
-/**
- * Africa on a globe, cropped to our footprint rather than the whole continent.
- * The view is rotated to the centre of the countries we actually cover and no
- * longer spins: this is a tool someone reads, not a screensaver.
- */
 function GodsEye({ records, selected, onPick, onSelect, issues = [] }) {
   const [rot, setRot] = useState(HOME);
   const [zoom, setZoom] = useState(1.15);
@@ -154,27 +158,40 @@ function GodsEye({ records, selected, onPick, onSelect, issues = [] }) {
         {records.filter((x) => near(x.coords)).map((x) => {
           const p = projection(x.coords); if (!p) return null;
           const isSel = selected === x.id;
+          const layerMeta = layerById(x.layer);
+          const iconName = layerMeta?.icon;
+          const isDataPoint = x.kind === "Point" && x.layer !== "issue";
           return (
             <g className={"marker " + (isSel ? "selected" : "")} key={x.id}
-               style={{ "--pin": layerColor(x.layer) }} transform={`translate(${p[0]},${p[1]})`}
+               style={{ "--pin": layerMeta?.color || trackColor(x.track) }}
+               transform={`translate(${p[0]},${p[1]})`}
                role="button" tabIndex="0" aria-label={`${x.title}, ${x.place}`}
                onClick={() => onPick(x.id)}
                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onPick(x.id); } }}>
-              <circle className="halo" r={isSel ? 26 : 16} />
-              <circle className="ring" r={isSel ? 12 : 8} />
-              <circle className="core" r={isSel ? 5 : 3} />
-              <rect className="pin-label-bg" x="17" y="-11" width={isSel ? 92 : 78} height="22" rx="4" />
-              <text className="pin-label" x="25" y="3">{x.place.split(",")[0].replace(" County", "")}</text>
+              {isDataPoint ? (
+                <>
+                  <circle className="halo" r={isSel ? 18 : 13} opacity="0.25" />
+                  {iconName && <use href={`#li-${iconName}`} x="-7" y="-7" width="14" height="14" stroke="var(--pin)" fill="var(--pin)" />}
+                </>
+              ) : (
+                <>
+                  <circle className="halo" r={isSel ? 26 : 16} />
+                  <circle className="ring" r={isSel ? 12 : 8} />
+                  <circle className="core" r={isSel ? 5 : 3} />
+                  <rect className="pin-label-bg" x="17" y="-11" width={isSel ? 92 : 78} height="22" rx="4" />
+                  <text className="pin-label" x="25" y="3">{x.place.split(",")[0].replace(" County", "")}</text>
+                </>
+              )}
             </g>
           );
         })}
       </svg>
 
       <div className="globe-controls">
-        <button onClick={() => { setRot(HOME); setZoom(1.15); }} aria-label="Reset view">Reset</button>
+        <button onClick={() => { setRot(HOME); setZoom(1.15); }} aria-label="reset view">Reset</button>
         <span className="globe-readout">{Math.round(lon)}° · {Math.round(-rot[1])}°</span>
-        <button aria-label="Zoom in" onClick={() => setZoom((z) => clamp(+(z + 0.2).toFixed(2), 1, 2.6))}><Plus size={13} /></button>
-        <button aria-label="Zoom out" onClick={() => setZoom((z) => clamp(+(z - 0.2).toFixed(2), 1, 2.6))}><Minus size={13} /></button>
+        <button aria-label="zoom in" onClick={() => setZoom((z) => clamp(+(z + 0.2).toFixed(2), 1, 2.6))}><Plus size={13} /></button>
+        <button aria-label="zoom out" onClick={() => setZoom((z) => clamp(+(z - 0.2).toFixed(2), 1, 2.6))}><Minus size={13} /></button>
       </div>
     </div>
   );
@@ -213,7 +230,6 @@ function Freshness({ source }) {
   return <span className={"fresh " + f.state}><i />{f.label}</span>;
 }
 
-/** The packet is the point of the product, so its actions are always visible. */
 function PacketActions({ text, filename, onToast }) {
   const copy = async () => {
     try { await navigator.clipboard.writeText(text); onToast("Packet copied. Paste it into any app."); }
@@ -286,6 +302,51 @@ export default function App() {
     (country === "All Africa" || i.country === country) &&
     (trackFilter === "all" || i.track === trackFilter)
   );
+
+  const manifest = useManifest();
+  const [layerData, setLayerData] = useState({});
+
+  useEffect(() => {
+    if (!manifest) return;
+    let live = true;
+    const jobs = Object.entries(LAYER_FILES).filter(([id]) => enabled.includes(id));
+    Promise.all(jobs.map(([id, file]) => getLayer(file).then(d => [id, d])))
+      .then(entries => {
+        if (!live) return;
+        const out = {};
+        for (const [id, d] of entries) if (d) out[id] = d;
+        setLayerData(out);
+      });
+    return () => { live = false; };
+  }, [manifest, enabled]);
+
+  const layerRecords = useMemo(() => {
+    const acc = [];
+    const occupied = []; // [lon, lat] cells already filled, to prevent stacking
+    const CELL = 0.04;    // ~4.5 km — dense-city spread, keeps icons readable
+    for (const [id, data] of Object.entries(layerData)) {
+      if (!data) continue;
+      const meta = manifest?.layers?.find((l) => l.file === LAYER_FILES[id]);
+      const recs = layerToRecords(data, { ...meta, id });
+      const shown = recs.filter((r) =>
+        country === "All Africa" || r.country === COUNTRIES.find((c) => geoNameOf(c) === r.country) || r.country === country
+      );
+      // Decimate to ~80 total across all layers — dense enough for a global
+      // picture, sparse enough that individual icons stay distinct. Each pick
+      // claims a 1-cell square so two layers never stack on one another.
+      const step = Math.max(1, Math.floor(shown.length / 80));
+      for (let i = 0; i < shown.length; i += step) {
+        const r = shown[i];
+        const cell = [Math.round(r.coords[0] / CELL), Math.round(r.coords[1] / CELL)];
+        if (occupied.some(([lon, lat]) => lon === cell[0] && lat === cell[1])) continue;
+        occupied.push(cell);
+        acc.push(r);
+      }
+    }
+    return acc;
+  }, [layerData, manifest, enabled, country]);
+
+  const allMarkers = useMemo(() => [...visible, ...visibleIssues, ...layerRecords], [visible, visibleIssues, layerRecords]);
 
   const r = find(selected) || allTrails[0];
   const file = files.find((f) => f.id === active);
@@ -376,8 +437,6 @@ export default function App() {
 
   const TABS = [["Explore", Compass], ["Trails", Route], ["Community", Users], ["Sources", BookOpen], ["Report", Lock]];
 
-  // Promoted community issues can only ever add countries already in COUNTRIES,
-  // but merging keeps a user-created issue from being filtered out of the list.
   const countries = [...new Set([...COUNTRIES, ...allTrails.map((x) => x.country), ...issues.map((i) => i.country)])].sort();
   const checkedCount = allTrails.filter((x) => x.source?.verified).length;
 
@@ -406,6 +465,7 @@ export default function App() {
 
   return (
     <div className="app">
+      <IconSymbols />
       {nav && <div className="nav-scrim" onClick={() => setNav(false)} />}
       <aside className={"sidebar " + (nav ? "open" : "")} inert={!!modal}>
         <a href="#explore" aria-label="Trail home" onClick={() => setTab("Explore")}>
@@ -491,7 +551,7 @@ export default function App() {
               <button aria-label="Language" onClick={() => setLangMenu(!langMenu)}><Globe2 size={14} />{lang}<ChevronDown size={11} /></button>
               {langMenu && (
                 <div className="language-menu">
-                  {[["EN", "English"], ["FR", "Français"], ["PT", "Português"], ["AR", "العربية"]].map(([v, n]) => (
+                  {["EN", "English"], ["FR", "Français"], ["PT", "Português"], ["AR", "العربية"].map(([v, n]) => (
                     <button key={v} onClick={() => { setLang(v); setLangMenu(false); }}>{n}{lang === v && <Check size={12} />}</button>
                   ))}
                 </div>
@@ -553,9 +613,9 @@ export default function App() {
                           </p>
                         </div>
                         {view === "Globe" ? (
-                          <GodsEye records={visible} issues={visibleIssues} selected={selected} onPick={pick} onSelect={(i) => { setIssueFocus(i); setModal("issueView"); }} />
+                          <GodsEye records={allMarkers} issues={visibleIssues} selected={selected} onPick={pick} onSelect={(i) => { setIssueFocus(i); setModal("issueView"); }} />
                         ) : (
-                          <svg className="africa-map" viewBox="0 0 1060 675" role="group" aria-label="Africa civic map">
+                          <svg className="africa-map" viewBox={`0 0 ${GW} ${GH}`} role="group" aria-label="Africa civic map">
                             <g>
                               {CONTEXT.map((f) => <path key={f.id} className="country context" d={flatPath(f) || ""} />)}
                               {COVERED.map((f) => <path key={f.id} className="country covered" d={flatPath(f) || ""} />)}
@@ -577,18 +637,31 @@ export default function App() {
                                   </g>
                                 );
                               })}
-                              {visible.map((x) => {
+                              {allMarkers.map((x) => {
                                 const p = projection(x.coords); if (!p) return null;
                                 const isSel = selected === x.id;
+                                const layerMeta = layerById(x.layer);
+                                const iconName = layerMeta?.icon;
+                                const isDataPoint = x.kind === "Point" && x.layer !== "issue";
                                 return (
-                                  <g className={"marker " + (isSel ? "selected" : "")} key={x.id} style={{ "--pin": layerColor(x.layer) }}
+                                  <g className={"marker " + (isSel ? "selected" : "")} key={x.id}
+                                     style={{ "--pin": layerMeta?.color || trackColor(x.track) }}
                                      transform={`translate(${p[0]},${p[1]})`} role="button" tabIndex="0"
                                      aria-label={`${x.title}, ${x.place}`} onClick={() => pick(x.id)}>
-                                    <circle className="halo" r={isSel ? 24 : 15} />
-                                    <circle className="ring" r={isSel ? 11 : 8} />
-                                    <circle className="core" r={isSel ? 4 : 3} />
-                                    <rect className="pin-label-bg" x="16" y="-11" width={isSel ? 92 : 78} height="22" rx="4" />
-                                    <text className="pin-label" x="24" y="3">{x.place.split(",")[0].replace(" County", "")}</text>
+                                    {isDataPoint ? (
+                                      <>
+                                        <circle className="halo" r={isSel ? 18 : 13} opacity="0.25" />
+                                        {iconName && <use href={`#li-${iconName}`} x="-7" y="-7" width="14" height="14" stroke="var(--pin)" fill="var(--pin)" />}
+                                      </>
+                                    ) : (
+                                      <>
+                                        <circle className="halo" r={isSel ? 24 : 15} />
+                                        <circle className="ring" r={isSel ? 11 : 8} />
+                                        <circle className="core" r={isSel ? 4 : 3} />
+                                        <rect className="pin-label-bg" x="16" y="-11" width={isSel ? 92 : 78} height="22" rx="4" />
+                                        <text className="pin-label" x="24" y="3">{x.place.split(",")[0].replace(" County", "")}</text>
+                                      </>
+                                    )}
                                   </g>
                                 );
                               })}
@@ -597,21 +670,8 @@ export default function App() {
                         )}
                         {view !== "List" && (
                           <div className="map-tools">
-                            <button aria-label="Layers" className={showLayers ? "active" : ""} onClick={() => setShowLayers(!showLayers)}><Layers size={16} /></button>
                             <button aria-label="Connect" className={connect ? "active" : ""} onClick={() => { setConnect(!connect); setToast("Select another trail to link it."); }}><Link2 size={16} /></button>
                             <button aria-label="Reset" onClick={() => { setCountry("All Africa"); setEnabled(layers.map((l) => l.id)); setTrackFilter("all"); }}><Crosshair size={16} /></button>
-                          </div>
-                        )}
-                        {showLayers && (
-                          <div className="layers-panel">
-                            <div>Layers<span className="dim">{enabled.length}/{layers.length}</span></div>
-                            {layers.map((l) => (
-                              <button key={l.id} aria-pressed={enabled.includes(l.id)}
-                                      onClick={() => setEnabled((p) => (p.includes(l.id) ? p.filter((x) => x !== l.id) : [...p, l.id]))}>
-                                <i style={{ background: l.color }} />{l.name}
-                                <span className={"checkbox " + (enabled.includes(l.id) ? "checked" : "")}>{enabled.includes(l.id) && <Check size={10} />}</span>
-                              </button>
-                            ))}
                           </div>
                         )}
                         <div className="atlas-legend">
@@ -870,8 +930,6 @@ export default function App() {
                 const rep = {
                   ref: refCode(), category: v.category,
                   place: v.place.trim(),
-                  // The country filter can be "All Africa", which is a view state,
-                  // not a country. Never write that into a report.
                   country: (v.country || "").trim() || (country !== "All Africa" ? country : ""),
                   when: v.when?.trim() || "Not stated", detail: v.detail.trim(),
                   outcome: v.outcome?.trim() || "", created: today,

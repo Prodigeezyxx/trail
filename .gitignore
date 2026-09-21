@@ -1,24 +1,11 @@
-node_modules/
+# Raw downloaded data — not needed in repo (regenerated via scripts/ingest-layers.py)
+data-raw/
+*.zip
+
+# Vite
 dist/
-dist-ssr/
-build/
-.vite/
-coverage/
-*.local
+node_modules/
+
+# Environment
 .env
-.env.*
-!.env.example
-.DS_Store
-Thumbs.db
-*.log
-npm-debug.log*
-.vercel
-.output/
-.cache/
-*.tsbuildinfo
-
-.npm-cache/
-.test-results/
-
-# portable builds are generated
-portable/
+.env.local
