@@ -1,0 +1,15 @@
+{
+  "projects": {
+    "default": "trail-africa"
+  },
+  "targets": {
+    "trail-africa": {
+      "hosting": {
+        "trail-africa": [
+          "default"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}
