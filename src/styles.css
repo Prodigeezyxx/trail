@@ -33,6 +33,8 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
 i, em { font-style: normal; }
 hr { border: 0; border-top: 1px solid var(--line); margin: 16px 0; }
 button, a { transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease; }
+/* Kill double-tap zoom delay on touch without disabling pinch-zoom. */
+button, a, select { touch-action: manipulation; }
 :focus-visible { outline: 2px solid var(--green); outline-offset: 2px; border-radius: 4px; }
 button svg, a svg { flex-shrink: 0; }
 
@@ -756,6 +758,36 @@ main { padding: 22px 18px 60px; max-width: 1500px; }
   .issue-grid { grid-template-columns: 1fr; }
   .atlas-legend { display: none; }
   .now, .bundle { display: none; }
+  header { padding-top: max(10px, env(safe-area-inset-top)); }
+  main { padding-bottom: calc(48px + env(safe-area-inset-bottom)); }
+  .toast { bottom: calc(22px + env(safe-area-inset-bottom)); }
+  /* iOS Safari auto-zooms on focus when inputs are under 16px — the single
+     most annoying phone behaviour in a form-heavy app. Hold 16px here. */
+  .search-form input,
+  .report-form input, .report-form textarea, .report-form select,
+  .form-grid input, .form-grid select, .form-grid textarea { font-size: 16px; }
+}
+
+/* Small phones: the header has five tenants and only 390px. The prototype
+   badge is the expendable one; the country filter truncates instead of
+   pushing search and language off screen. Map tools grow to real
+   thumb-sized targets. */
+@media (max-width: 520px) {
+  .prototype { display: none; }
+  header { gap: 8px; padding-left: 12px; padding-right: 12px; }
+  .header-left, .header-right { gap: 7px; }
+  .country-select { max-width: 38vw; min-width: 0; }
+  .country-select select {
+    max-width: 100%; overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap;
+  }
+  .map-tools button { width: 40px; height: 40px; }
+  .globe-controls button { padding: 8px 11px; }
+  .sidebar { width: min(300px, 86vw); }
+  .overlay { padding: 12px; }
+  .modal { padding: 16px; }
+  .packet-actions .primary, .packet-actions .ghost { padding-top: 11px; padding-bottom: 11px; }
+  .trail-row { flex-wrap: wrap; }
 }
 
 /* ---------------- verified source registry ---------------- */
