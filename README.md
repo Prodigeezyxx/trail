@@ -81,6 +81,8 @@ Every format can be downloaded as TXT, copied, or handed to WhatsApp or Telegram
 
 ## It runs with no internet, from a USB stick
 
+**It can run from a USB stick. No server, no install, no network.**
+
 Two builds, and they are genuinely different:
 
 ```bash
@@ -223,6 +225,8 @@ flowchart LR
     F --> G["Trail Africa<br/>shipped"]
     G --> H["Runtime: fixed data<br/>no generative features"]
 ```
+
+Research log (Notion): https://app.notion.com/p/floats/OSF-Andela-Hackathon-Mission-Control-3d88ec5dae61815f8a85d9b20b90fb99?source=copy_link
 
 ## Compliance
 
