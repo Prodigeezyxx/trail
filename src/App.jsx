@@ -819,27 +819,40 @@ export default function App() {
           {/* ----------------------------------------------------- TRAILS */}
           {tab === "Trails" && (
             <section className="page">
-              <div className="eyebrow">YOUR TRAILS</div>
+              <div className="eyebrow">TRAILS</div>
               <h1>Every file. <span>A way forward.</span></h1>
-              <p className="page-sub">Each file holds a question, the office that should answer it, a witness, and a date to come back.</p>
+              <p className="page-sub">All trails and data-layer records on the map. Click any row to open it.</p>
               <div className="trails-list">
-                {files.map((f) => {
-                  const rec = find(f.recordId);
+                {allTrails.filter((x) =>
+                  enabled.includes(x.layer) &&
+                  (country === "All Africa" || x.country === country) &&
+                  (trackFilter === "all" || x.track === trackFilter)
+                ).map((x) => {
+                  const isUserFile = files.some((f) => f.recordId === x.id);
+                  const f = files.find((f) => f.recordId === x.id);
                   return (
-                    <div className="trail-row" key={f.id}>
-                      <span className="record-dot" style={{ background: layerColor(rec?.layer) }} />
+                    <div className={"trail-row " + (isUserFile ? "tracked" : "untracked")} key={x.id}>
+                      <span className="record-dot" style={{ background: layerColor(x.layer) }} />
                       <div className="trail-row-mid">
-                        <strong>{f.title}</strong>
-                        <small>{rec?.place} · {f.holder} · due {short(f.due)}</small>
+                        <strong>{x.title}</strong>
+                        <small>{x.place} · {trackById(x.track)?.short}</small>
                       </div>
-                      <Badge value={state(f, today)} />
-                      <button className="ghost sm" onClick={() => { setActive(f.id); setModal("file"); }}>
-                        <FileText size={13} />Packet
-                      </button>
+                      {isUserFile && f ? (
+                        <>
+                          <Badge value={state(f, today)} />
+                          <button className="ghost sm" onClick={() => { setActive(f.id); setModal("file"); }}><FileText size={13} />Packet</button>
+                        </>
+                      ) : (
+                        <button className="ghost sm" onClick={() => startTrail({ label: "Track this", ask: x.ask, track: x.track })}><Plus size={13} />Track</button>
+                      )}
                     </div>
                   );
                 })}
-                {files.length === 0 && <p className="empty">No trails yet. Open Explore and start one from any record.</p>}
+                {allTrails.filter((x) =>
+                  enabled.includes(x.layer) &&
+                  (country === "All Africa" || x.country === country) &&
+                  (trackFilter === "all" || x.track === trackFilter)
+                ).length === 0 && <p className="empty">No trails in the current filters.</p>}
               </div>
             </section>
           )}

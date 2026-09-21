@@ -353,6 +353,20 @@ main { padding: 22px 18px 60px; max-width: 1500px; }
 .record-layer { margin-left: auto; font-size: 10px; letter-spacing: 0.4px; }
 .record-row svg { color: var(--dim); }
 
+/* trails list page */
+.trails-list { display: flex; flex-direction: column; gap: 4px; }
+.trail-row {
+  display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+  border-radius: 6px; border: 1px solid var(--line);
+  background: var(--s1);
+}
+.trail-row:hover { background: var(--s2); border-color: var(--dim); }
+.trail-row.tracked { border-color: var(--green); }
+.trail-row.untracked small,
+.trail-row.untracked strong { color: var(--dim); }
+.trail-row .trail-row-mid { flex: 1; min-width: 0; }
+.trail-row .trail-row-mid small { font-size: 10.5px; }
+
 /* detail panel */
 .detail-panel {
   background: var(--s1); border: 1px solid var(--line);
