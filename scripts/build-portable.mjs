@@ -108,7 +108,7 @@ const sizeOf = (p) => statSync(p).size;
 const { size: singleSize } = statSync(singlePath);
 const { size: dirSize } = statSync(join(target, "index.html"));
 
-const readme = `TRAIL — offline copies
+const readme = `TRAIL AFRICA — offline copies
 ${"=".repeat(46)}
 
 TWO DIFFERENT THINGS SIT IN THIS FOLDER. PICK THE RIGHT ONE.
@@ -157,7 +157,7 @@ secure channel instead of this app.
 
 DATA
 ----
-Data bundle: 21 Sep 2026. Each record shows its own source, the date that
+Data bundle: 21 Sep 2026. Covers 13 countries in Africa. Each record shows its own source, the date that
 source was last checked, and what the record does not tell you. A source
 that has not been checked is shown as unchecked, not as verified.
 

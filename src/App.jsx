@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { geoMercator, geoOrthographic, geoPath, geoDistance, geoGraticule10 } from "d3-geo";
+import { geoMercator, geoOrthographic, geoPath, geoDistance, geoGraticule10, geoBounds, geoCentroid } from "d3-geo";
 import {
   Search, Globe2, Map, Layers, Route, Files, BookOpen, ShieldCheck,
   HelpCircle, X, Check, CalendarDays, MapPin, Link2, FileText,
@@ -13,7 +13,7 @@ import {
   placeLabel, stateAt as state, loadFiles, loadIssues, validIssue,
   packetText as packet, addDays, daysBetween, freshnessOf,
   STORAGE_KEY, ISSUE_KEY, REPORT_KEY, BUNDLE_DATE, VOTE_THRESHOLD,
-  PROMOTE_THRESHOLD, trackById, layerById,
+  PROMOTE_THRESHOLD, trackById, layerById, COUNTRIES, geoNameOf,
 } from "./data";
 import africaGeo from "./data/africa.json";
 import {
@@ -75,13 +75,23 @@ const REPORT_CATEGORIES = [
 /* ------------------------------------------------------------------ globe */
 
 const GW = 1060, GH = 675, GCX = GW / 2, GCY = GH / 2;
-const HOME = [-17, -2];
 
 /**
- * Africa on a globe, cropped so the continent fills the frame rather than
- * floating in empty ocean. There is deliberately no auto-rotation: this is a
- * tool someone reads, not a screensaver, and a view that moves on its own is
- * hostile to a slow device and to anyone with vestibular sensitivity.
+ * The countries this build covers, as geometry. Derived once: it drives the
+ * view fitting, the globe rotation and which outlines are drawn as active.
+ */
+const COVERED = africaGeo.features.filter((f) =>
+  COUNTRIES.some((c) => geoNameOf(c) === f.properties.name));
+const CONTEXT = africaGeo.features.filter((f) =>
+  !COUNTRIES.some((c) => geoNameOf(c) === f.properties.name));
+const FOOTPRINT = { type: "FeatureCollection", features: COVERED };
+const FOOTPRINT_CENTRE = geoCentroid(FOOTPRINT);
+const HOME = [-FOOTPRINT_CENTRE[0], -FOOTPRINT_CENTRE[1]];
+
+/**
+ * Africa on a globe, cropped to our footprint rather than the whole continent.
+ * The view is rotated to the centre of the countries we actually cover and no
+ * longer spins: this is a tool someone reads, not a screensaver.
  */
 function GodsEye({ records, selected, onPick, onSelect, issues = [] }) {
   const [rot, setRot] = useState(HOME);
@@ -123,7 +133,8 @@ function GodsEye({ records, selected, onPick, onSelect, issues = [] }) {
         <path className="globe-sphere" d={path({ type: "Sphere" }) || ""} fill="url(#gsea)" />
         <g clipPath="url(#gclip)">
           <path className="globe-graticule" d={path(geoGraticule10()) || ""} />
-          {africaGeo.features.map((f) => <path key={f.id} className="country" d={path(f) || ""} />)}
+          {CONTEXT.map((f) => <path key={f.id} className="country context" d={path(f) || ""} />)}
+          {COVERED.map((f) => <path key={f.id} className="country covered" d={path(f) || ""} />)}
         </g>
         <path d={path({ type: "Sphere" }) || ""} fill="url(#gshade)" pointerEvents="none" />
         <path className="globe-limb" d={path({ type: "Sphere" }) || ""} pointerEvents="none" />
@@ -303,7 +314,10 @@ export default function App() {
     return () => window.removeEventListener("keydown", h);
   }, []);
 
-  const projection = useMemo(() => geoMercator().center([17, 2]).scale(430).translate([440, 330]), []);
+  const projection = useMemo(
+    () => geoMercator().fitExtent([[70, 58], [GW - 70, GH - 58]], FOOTPRINT),
+    []
+  );
   const flatPath = useMemo(() => geoPath(projection), [projection]);
 
   const pick = (id) => { if (connect && id !== selected) setLinks((p) => (p.includes(id) ? p.filter((i) => i !== id) : [...p, id])); else { setSelected(id); setIssueFocus(null); setLinks([]); } };
@@ -362,7 +376,9 @@ export default function App() {
 
   const TABS = [["Explore", Compass], ["Trails", Route], ["Community", Users], ["Sources", BookOpen], ["Report", Lock]];
 
-  const countries = [...new Set([...allTrails.map((x) => x.country), ...issues.map((i) => i.country)])].sort();
+  // Promoted community issues can only ever add countries already in COUNTRIES,
+  // but merging keeps a user-created issue from being filtered out of the list.
+  const countries = [...new Set([...COUNTRIES, ...allTrails.map((x) => x.country), ...issues.map((i) => i.country)])].sort();
   const checkedCount = allTrails.filter((x) => x.source?.verified).length;
 
   const reportPacket = (rep) => {
@@ -393,9 +409,9 @@ export default function App() {
       {nav && <div className="nav-scrim" onClick={() => setNav(false)} />}
       <aside className={"sidebar " + (nav ? "open" : "")} inert={!!modal}>
         <a href="#explore" aria-label="Trail home" onClick={() => setTab("Explore")}>
-          <div className="brand"><span>TRAIL</span><b>.</b></div>
+          <div className="brand"><span>TRAIL</span><b>AFRICA</b></div>
         </a>
-        <div className="workspace-tag"><i />{online ? "AFRICAN CIVIC WORKSPACE" : "OFFLINE · WORKING FROM CACHE"}</div>
+        <div className="workspace-tag"><i />{online ? `${COUNTRIES.length} COUNTRIES · ${layers.length} LAYERS` : "OFFLINE · WORKING FROM CACHE"}</div>
 
         <nav>
           {TABS.map(([name, Icon]) => (
@@ -502,8 +518,11 @@ export default function App() {
 
               <div className="toolbar">
                 <div className="toolbar-left">
-                  <span className="record-count"><b>{visible.length}</b> trails · <b>{visibleIssues.length}</b> community issues <span>across {new Set(visible.map((x) => x.country)).size} countries</span></span>
-                  <small><i />Illustrative dataset · {checkedCount} sources independently checked</small>
+                  <span className="record-count">
+                    <b>{visible.length}</b> trails · <b>{visibleIssues.length}</b> {visibleIssues.length === 1 ? "community issue" : "community issues"}{" "}
+                    <span>across {new Set([...visible.map((x) => x.country), ...visibleIssues.map((i) => i.country)]).size} countries in scope</span>
+                  </span>
+                  <small><i />Illustrative dataset · {verifiedCount()} public data sources fetch-verified</small>
                 </div>
                 <div className="toolbar-right">
                   <div className="segmented">
@@ -526,15 +545,28 @@ export default function App() {
                     {view !== "List" ? (
                       <>
                         <div className="atlas-heading">
-                          <div className="eyebrow">{view === "Globe" ? "AFRICA, WHOLE" : "AFRICA, FLAT"}</div>
-                          <p>{view === "Globe" ? "Drag to turn. No rotation unless you ask for it." : "Tap a marker for its trail."}</p>
+                          <div className="eyebrow">TRAIL AFRICA · {COUNTRIES.length} COUNTRIES IN SCOPE</div>
+                          <p>
+                            {view === "Globe"
+                              ? "Drag to turn. Brighter countries are the ones this build covers."
+                              : "Tap a marker for its trail. Dimmed countries are context only."}
+                          </p>
                         </div>
                         {view === "Globe" ? (
                           <GodsEye records={visible} issues={visibleIssues} selected={selected} onPick={pick} onSelect={(i) => { setIssueFocus(i); setModal("issueView"); }} />
                         ) : (
                           <svg className="africa-map" viewBox="0 0 1060 675" role="group" aria-label="Africa civic map">
                             <g>
-                              {africaGeo.features.map((f) => <path key={f.id} className="country" d={flatPath(f) || ""} />)}
+                              {CONTEXT.map((f) => <path key={f.id} className="country context" d={flatPath(f) || ""} />)}
+                              {COVERED.map((f) => <path key={f.id} className="country covered" d={flatPath(f) || ""} />)}
+                              {COVERED.map((f) => {
+                                const p = projection(geoCentroid(f));
+                                return p ? (
+                                  <text className="country-label" key={"lb" + f.id} x={p[0]} y={p[1]}>
+                                    {f.properties.name.toUpperCase()}
+                                  </text>
+                                ) : null;
+                              })}
                               {visibleIssues.map((i) => {
                                 const p = projection(i.coords); if (!p) return null;
                                 return (

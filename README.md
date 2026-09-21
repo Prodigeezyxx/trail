@@ -1,14 +1,31 @@
-# Trail
+# Trail Africa
 
 **A fact should lead somewhere.**
 
-Trail is a civic-information workspace for African communities. It does not try to
+Trail Africa is a civic-information workspace for African communities. It does not try to
 be a news feed. A person finds a fact about a public service, sees exactly where
 that fact comes from and what it does *not* tell them, connects it to the office
 that holds the next step — and leaves with a packet they can send, print, broadcast
 or carry on a USB stick.
 
 Built for the **OSF × Andela hackathon**, September 2026.
+
+## Scope
+
+The build covers a defined footprint rather than the whole continent: **13
+countries**, derived in code from the records and community issues so the
+footprint can never drift from the data.
+
+| | |
+|---|---|
+| In scope | Cameroon, DR Congo, Ethiopia, Ghana, Kenya, Mozambique, Nigeria, Rwanda, Senegal, South Africa, Tanzania, Uganda, Zambia |
+| Out of scope | everything else |
+
+Other African countries are still drawn on the map, deliberately, as quiet
+context — a map showing thirteen disconnected outlines reads as broken rather
+than as focused. Covered countries carry the visual weight and the labels; the
+rest are dimmed. All data, sources and layer work is scoped to the thirteen.
+
 
 ---
 

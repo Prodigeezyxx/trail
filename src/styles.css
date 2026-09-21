@@ -772,3 +772,17 @@ main { padding: 22px 18px 60px; max-width: 1500px; }
 .pathways .notice { margin-top: 16px; }
 .pathways .notice p { margin-bottom: 6px; }
 .pathways .notice p:last-child { margin-bottom: 0; }
+
+/* ---------------- Trail Africa: footprint vs context ----------------
+   The build covers a defined set of countries. Everything else is drawn as
+   quiet context so the map still reads as a continent rather than thirteen
+   disconnected blobs — but the covered countries carry the visual weight. */
+.country.context { fill: #0f1a12; stroke: #1c3123; stroke-width: 0.7; }
+.country.covered { fill: #1c3d26; stroke: #57906a; stroke-width: 1.05; }
+.globe-svg .country.context { fill: #122117; stroke: #23402c; stroke-width: 0.7; }
+.globe-svg .country.covered { fill: #27532f; stroke: #74ad84; stroke-width: 0.95; }
+.country-label { font-size: 6.6px; }
+
+/* two-tone wordmark: TRAIL AFRICA */
+.brand b { margin-left: 6px; }
+.brand span, .brand b { letter-spacing: -1px; }

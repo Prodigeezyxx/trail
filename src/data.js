@@ -319,6 +319,27 @@ export const BUNDLE_DATE = "2026-09-21";
 export const recordById = (id) => RECORDS.find((r) => r.id === id);
 export const placeLabel = (r) => `${r.place}, ${r.country}`;
 
+/**
+ * The countries this build actually covers — derived from the records and the
+ * community issues, so the footprint can never drift from the data.
+ *
+ * Everything is scoped to these: records, issues, layer features and the view
+ * itself. The other African countries in the geometry are drawn as quiet
+ * context only, because a map showing thirteen disconnected outlines reads as
+ * broken rather than as focused.
+ */
+export const COUNTRIES = [...new Set([
+  ...RECORDS.map((r) => r.country),
+  ...ISSUE_SEEDS.map((i) => i.country),
+])].sort();
+
+/** The bundled Natural Earth extract abbreviates two names we use in full. */
+const GEO_NAME = { "DR Congo": "Dem. Rep. Congo", Congo: "Congo" };
+export const geoNameOf = (country) => GEO_NAME[country] ?? country;
+export const isCovered = (country) => COUNTRIES.includes(country);
+export const coveredFeatures = (geo) =>
+  geo.features.filter((f) => COUNTRIES.some((c) => geoNameOf(c) === f.properties.name));
+
 export function dateLabel(date) {
   return new Date(`${date}T12:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 }
