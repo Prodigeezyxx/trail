@@ -16,3 +16,6 @@ npm-debug.log*
 .output/
 .cache/
 *.tsbuildinfo
+
+.npm-cache/
+.test-results/
