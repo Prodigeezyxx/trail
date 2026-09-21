@@ -255,6 +255,36 @@ function PacketActions({ text, filename, onToast }) {
 
 /* -------------------------------------------------------------------- app */
 
+/** Detail panel for an ingested data-layer point. */
+function DataPointDetail({ point }) {
+  if (!point) return null;
+  const layerMeta = layerById(point.layer);
+  return (
+    <>
+      <div className="detail-head">
+        <div>
+          <div className="eyebrow" style={{ color: layerMeta?.color || trackColor(point.track) }}>{layerMeta?.name || point.layer}</div>
+          <h3>{point.title}</h3>
+          <div className="detail-place"><MapPin size={13} />{point.place}</div>
+        </div>
+      </div>
+      {point.description && <p className="detail-desc">{point.description}</p>}
+      <div className="detail-meta">
+        <div><ShieldCheck size={13} />{point.source?.name || "Open data"}</div>
+        <div><CalendarDays size={13} />{point.source?.checked ? `Checked ${short(point.source.checked)}` : "Source not independently verified"}</div>
+        {point.source?.url && (
+          <a href={point.source.url} target="_blank" rel="noopener noreferrer"><Link2 size={13} />Open source<ExternalLink size={11} /></a>
+        )}
+      </div>
+      <div className="detail-next">
+        <div className="eyebrow">THE NEXT STEP</div>
+        <p>{layerMeta?.evidence || "Use this location as evidence for a community trail — start one below."}</p>
+      </div>
+      <button className="primary detail-cta" onClick={() => {}}><Route size={15} />Start a trail from here</button>
+    </>
+  );
+}
+
 export default function App() {
   const [tab, setTab] = useState("Explore");
   const [selected, setSelected] = useState("mak");
@@ -290,6 +320,8 @@ export default function App() {
     ...RECORDS.map((r) => ({ ...r, place: placeLabel(r), official: true })),
     ...promoted.map((p) => ({ ...p, place: `${p.place}, ${p.country}`, official: true, promotedFrom: p.issueId })),
   ], [promoted]);
+
+  const [dataPoint, setDataPoint] = useState(null);
 
   const find = (id) => allTrails.find((r) => r.id === id);
   const visible = allTrails.filter((x) =>
@@ -348,7 +380,7 @@ export default function App() {
 
   const allMarkers = useMemo(() => [...visible, ...visibleIssues, ...layerRecords], [visible, visibleIssues, layerRecords]);
 
-  const r = find(selected) || allTrails[0];
+  const r = find(selected) || (dataPoint ? null : allTrails[0]);
   const file = files.find((f) => f.id === active);
 
   useEffect(() => {
@@ -381,7 +413,13 @@ export default function App() {
   );
   const flatPath = useMemo(() => geoPath(projection), [projection]);
 
-  const pick = (id) => { if (connect && id !== selected) setLinks((p) => (p.includes(id) ? p.filter((i) => i !== id) : [...p, id])); else { setSelected(id); setIssueFocus(null); setLinks([]); } };
+  const pick = (id) => {
+    if (connect && id !== selected) { setLinks((p) => (p.includes(id) ? p.filter((i) => i !== id) : [...p, id])); return; }
+    setSelected(id); setIssueFocus(null); setLinks([]);
+    // data-layer points have ids like "health-0" — show their detail in the panel
+    const dp = layerRecords.find((x) => x.id === id);
+    setDataPoint(dp || null);
+  };
 
   const vote = (id) => {
     if (voted.includes(id)) { setVoted((p) => p.filter((v) => v !== id)); setIssues((p) => p.map((i) => (i.id === id ? { ...i, votes: Math.max(0, i.votes - 1) } : i))); return; }
@@ -693,37 +731,43 @@ export default function App() {
                     )}
                   </section>
 
-                  {view !== "List" && r && (
+                  {view !== "List" && (dataPoint || r) && (
                     <section className="detail-panel">
-                      <div className="detail-head">
-                        <div>
-                          <div className="eyebrow" style={{ color: trackColor(r.track) }}>{trackById(r.track)?.name.toUpperCase()}</div>
-                          <h3>{r.title}</h3>
-                          <div className="detail-place"><MapPin size={13} />{r.place}</div>
-                        </div>
-                      </div>
-                      <p className="detail-desc">{r.description}</p>
-                      <div className="detail-scores">
-                        <div className="score"><span>Confidence</span><b>{Math.round(r.confidence * 100)}%</b></div>
-                        <div className="score"><span>Importance</span><b>{Math.round(r.importance * 100)}%</b></div>
-                      </div>
-                      <div className="detail-meta">
-                        <div><ShieldCheck size={13} />{r.source?.name || "No source recorded"}</div>
-                        <div><CalendarDays size={13} />Listed {short(r.listed)}</div>
-                        <Freshness source={r.source} />
-                        <div className="tag"><AlertTriangle size={11} />Illustrative · not independently verified</div>
-                      </div>
-                      {r.limitations?.length > 0 && (
-                        <details className="limits">
-                          <summary>What this does not tell you</summary>
-                          <ul>{r.limitations.map((l) => <li key={l}>{l}</li>)}</ul>
-                        </details>
+                      {dataPoint ? (
+                        <DataPointDetail point={dataPoint} />
+                      ) : (
+                        <>
+                          <div className="detail-head">
+                            <div>
+                              <div className="eyebrow" style={{ color: trackColor(r.track) }}>{trackById(r.track)?.name.toUpperCase()}</div>
+                              <h3>{r.title}</h3>
+                              <div className="detail-place"><MapPin size={13} />{r.place}</div>
+                            </div>
+                          </div>
+                          <p className="detail-desc">{r.description}</p>
+                          <div className="detail-scores">
+                            <div className="score"><span>Confidence</span><b>{Math.round(r.confidence * 100)}%</b></div>
+                            <div className="score"><span>Importance</span><b>{Math.round(r.importance * 100)}%</b></div>
+                          </div>
+                          <div className="detail-meta">
+                            <div><ShieldCheck size={13} />{r.source?.name || "No source recorded"}</div>
+                            <div><CalendarDays size={13} />Listed {short(r.listed)}</div>
+                            <Freshness source={r.source} />
+                            <div className="tag"><AlertTriangle size={11} />Illustrative · not independently verified</div>
+                          </div>
+                          {r.limitations?.length > 0 && (
+                            <details className="limits">
+                              <summary>What this does not tell you</summary>
+                              <ul>{r.limitations.map((l) => <li key={l}>{l}</li>)}</ul>
+                            </details>
+                          )}
+                          <div className="detail-next">
+                            <div className="eyebrow">THE NEXT STEP</div>
+                            <p>{r.ask}</p>
+                          </div>
+                          <button className="primary detail-cta" onClick={() => setModal("template")}><Route size={15} />Start a trail from here</button>
+                        </>
                       )}
-                      <div className="detail-next">
-                        <div className="eyebrow">THE NEXT STEP</div>
-                        <p>{r.ask}</p>
-                      </div>
-                      <button className="primary detail-cta" onClick={() => setModal("template")}><Route size={15} />Start a trail from here</button>
                     </section>
                   )}
                 </div>
