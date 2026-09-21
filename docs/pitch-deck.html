@@ -5,51 +5,49 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Trail Africa — Pitch Deck</title>
 <style>
-@page { margin: 0; size: A4; }
-*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;background:#08090a;color:#e6e8ea;overflow:hidden}
-.deck{display:flex;flex-direction:column;align-items:center;width:100%;padding:20px;gap:20px}
-.slide{width:100%;max-width:960px;background:#0e1113;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:40px;box-sizing:border-box;page-break-after:always}
+/* Fixed 16:9 slide geometry: every .slide is exactly one printed page. */
+@page { size: 13.33in 7.5in; margin: 0; }
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;background:#08090a;color:#e6e8ea}
+.deck{display:flex;flex-direction:column;align-items:center;width:100%;padding:20px;gap:20px;counter-reset:slide}
+.slide{position:relative;width:100%;max-width:1240px;height:700px;background:#0e1113;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:44px 56px;box-sizing:border-box;page-break-after:always;overflow:hidden;counter-increment:slide}
 .slide:last-child{page-break-after:auto}
+.slide::after{content:counter(slide) " / 14";position:absolute;bottom:18px;right:28px;font-size:10px;letter-spacing:1px;color:#5d666d}
 .brand-bar{position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#4ade80,#20b8a6)}
-.brand{display:flex;gap:4px;align-items:baseline;font-size:14px;font-weight:500;letter-spacing:1px;margin-bottom:24px}
-.brand b{color:var(--green)}
-.eyebrow{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#8b9298;margin-bottom:16px;font-weight:500}
+.brand{display:flex;gap:4px;align-items:baseline;font-size:14px;font-weight:500;letter-spacing:1px;margin-bottom:20px}
+.brand b{color:#4ade80}
+.eyebrow{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#8b9298;margin-bottom:14px;font-weight:500}
 .eyebrow.green{color:#4ade80}
-h1{font-size:42px;font-weight:300;line-height:1.1;margin-bottom:20px}
+h1{font-size:44px;font-weight:300;line-height:1.1;margin-bottom:18px}
 h1 strong{font-weight:600;color:#4ade80}
-h2{font-size:30px;font-weight:300;line-height:1.2;margin-bottom:20px}
+h2{font-size:30px;font-weight:300;line-height:1.2;margin-bottom:16px}
 h2 strong{font-weight:600}
 h3{font-size:18px;font-weight:500;margin-bottom:8px}
-p{font-size:15px;line-height:1.6;color:#8b9298;margin-bottom:16px}
+p{font-size:15px;line-height:1.6;color:#8b9298;margin-bottom:14px}
 p.large{font-size:18px}
 p.lead{color:#e6e8ea}
 .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:20px}
 .stat{background:#14191c;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:16px;text-align:center}
 .stat .num{font-size:32px;font-weight:600;color:#4ade80;line-height:1}
 .stat .label{font-size:10px;color:#8b9298;margin-top:4px;text-transform:uppercase;letter-spacing:0.5px}
-.track-card{background:#14191c;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:20px}
+.track-card{background:#14191c;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:18px 20px}
 .track-card h3{font-size:15px;margin-bottom:6px}
 .track-card p{font-size:12px;margin:0}
-.col-2{display:grid;grid-template-columns:1fr;gap:20px;margin-top:20px}
+.col-2{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px}
 .col-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:20px}
 table{width:100%;border-collapse:collapse;font-size:13px;margin-top:16px}
 th,td{padding:8px 12px;text-align:left;border-bottom:1px solid rgba(255,255,255,0.08)}
 th{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#8b9298;font-weight:500}
 td{color:#e6e8ea}
-.format-pills{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
-.pill{background:#14191c;border:1px solid rgba(255,255,255,0.08);border-radius:100px;padding:4px 12px;font-size:11px;color:#8b9298}
-.pill.active{border-color:#4ade80;color:#4ade80}
 ul{margin-left:20px}
 li{margin-bottom:6px}
+.rule{display:flex;gap:12px;align-items:flex-start;background:#14191c;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px 16px;margin-bottom:8px;font-size:13px;color:#c6cbce}
+.rule b{color:#4ade80}
+.pipe-cap{font-size:11px;color:#8b9298;margin-top:10px}
 @media print{
   .deck{padding:0;gap:0}
-  .slide{border:none;border-radius:0;padding:30px 40px;page-break-after:always}
-  .slide:last-child{page-break-after:auto}
+  .slide{border:none;border-radius:0;max-width:none;width:13.33in;height:7.5in;padding:0.55in 0.7in}
   body{background:#000}
-}
-@media(max-width:1200px){
-  .col-3{grid-template-columns:1fr}
-  h1{font-size:32px}
 }
 </style>
 </head>
@@ -58,30 +56,30 @@ li{margin-bottom:6px}
 
   <div class="slide">
     <div class="brand-bar"></div>
-    <div style="margin-top:auto">
+    <div style="display:flex;flex-direction:column;height:100%">
       <div class="brand"><span>TRAIL</span><b>AFRICA</b></div>
       <div class="eyebrow green">— FROM INFORMATION TO ACTION</div>
       <h1>A fact should<br><strong>lead somewhere.</strong></h1>
-      <p class="large lead" style="max-width:560px;">A civic-information workspace for African communities. Find a fact, trace its source, connect it to the office that holds the next step — and leave with a packet you can send, print, or carry on a USB stick.</p>
+      <p class="large lead" style="max-width:620px;">A civic-information workspace for African communities. Find a fact, trace its source, connect it to the office that holds the next step — and leave with a packet you can send, print, or carry on a USB stick.</p>
+      <div style="margin-top:auto;font-size:11px;color:#8b9298">Transparency &amp; Accountability · OSF × Andela Hackathon · September 2026</div>
     </div>
-    <div style="margin-top:auto;font-size:11px;color:#8b9298">OSF × Andela Hackathon · September 2026</div>
   </div>
 
   <div class="slide">
     <div class="brand-bar"></div>
     <div class="eyebrow">THE PROBLEM</div>
     <h2>Information without action<br><strong>is just noise.</strong></h2>
-    <ul style="margin-top:20px">
+    <ul style="margin-top:18px;font-size:15px;color:#c6cbce;line-height:2">
       <li>Fragmented across offices, formats and languages</li>
       <li>Out of date, with no way to tell from what's current</li>
       <li>Hard to verify — source, date and limits all unstated</li>
       <li>Locked behind systems that are hard to navigate</li>
     </ul>
-    <div class="stat-grid" style="margin-top:30px">
+    <div class="stat-grid">
       <div class="stat"><div class="num">13</div><div class="label">Countries</div></div>
       <div class="stat"><div class="num">14</div><div class="label">Seeded trails</div></div>
-      <div class="stat"><div class="num">5</div><div class="label">Data layers</div></div>
-      <div class="stat"><div class="num">257K</div><div class="label">Data points</div></div>
+      <div class="stat"><div class="num">4</div><div class="label">Data layers</div></div>
+      <div class="stat"><div class="num">14K</div><div class="label">Bundled points</div></div>
     </div>
   </div>
 
@@ -101,16 +99,16 @@ li{margin-bottom:6px}
     <div class="eyebrow">THREE TRACKS</div>
     <h2>Every record belongs to one.</h2>
     <div class="col-3" style="margin-top:24px">
-      <div class="track-card" style="border-color:var(--green,#4ade80)">
-        <h3>Transparency & Accountability</h3>
+      <div class="track-card" style="border-color:#4ade80">
+        <h3>Transparency &amp; Accountability</h3>
         <p style="font-size:12px">Turn a published budget, tender, audit finding or service standard into a written question with a named recipient and a response date.</p>
       </div>
-      <div class="track-card" style="border-color:var(--amber,#fbbf24)">
-        <h3>Stability & Social Cohesion</h3>
+      <div class="track-card" style="border-color:#38bdf8">
+        <h3>Stability &amp; Social Cohesion</h3>
         <p style="font-size:12px">Route everyday friction — a broken water point, a land question, a shared-resource dispute — to the body that can resolve it, before it escalates.</p>
       </div>
-      <div class="track-card" style="border-color:var(--pink,#fb7185)">
-        <h3>Safety, Reporting & Protection</h3>
+      <div class="track-card" style="border-color:#f472b6">
+        <h3>Safety, Reporting &amp; Protection</h3>
         <p style="font-size:12px">Write a report that carries no identifiers, get a reference, and reach a real pathway: oversight body, legal aid, or survivor support.</p>
       </div>
     </div>
@@ -120,23 +118,25 @@ li{margin-bottom:6px}
     <div class="brand-bar"></div>
     <div class="eyebrow">TOP-DOWN: TRAILS</div>
     <h2>14 seeded records, 13 countries.</h2>
-    <div class="track-card" style="margin-top:16px">
-      <h3>Each record carries:</h3>
-      <ul style="font-size:12px;margin-top:8px">
-        <li>Source name, type, URL, update cadence</li>
-        <li>Last-checked date (not assumed current)</li>
-        <li>Explicit limitations (required field)</li>
-        <li>Separate confidence & importance scores</li>
-        <li>Named holder + witness</li>
-        <li>The exact question to ask</li>
-      </ul>
-    </div>
-    <div class="track-card" style="margin-top:12px">
-      <h3 style="font-size:13px;color:#8b9298">EXAMPLE: MAKUENI, KENYA</h3>
-      <p style="font-size:13px"><strong>Holder:</strong> District Water Office</p>
-      <p style="font-size:13px"><strong>Witness:</strong> County WASH Coordinator</p>
-      <p style="font-size:13px"><strong>Ask:</strong> "Where is the published allocation for this water point, and how can residents submit feedback?"</p>
-      <p style="font-size:11px;color:#8b9298;margin-top:8px">Source: Wasreb · checked 2026-09-21 · Unverified — illustrative</p>
+    <div class="col-2" style="margin-top:16px">
+      <div class="track-card">
+        <h3>Each record carries:</h3>
+        <ul style="font-size:12px;margin-top:8px;line-height:1.9;color:#c6cbce">
+          <li>Source name, type, URL, update cadence</li>
+          <li>Last-checked date (not assumed current)</li>
+          <li>Explicit limitations (required field)</li>
+          <li>Separate confidence &amp; importance scores</li>
+          <li>Named holder + witness</li>
+          <li>The exact question to ask</li>
+        </ul>
+      </div>
+      <div class="track-card">
+        <h3 style="font-size:13px;color:#8b9298">EXAMPLE: MAKUENI, KENYA</h3>
+        <p style="font-size:13px;margin-top:8px"><strong>Holder:</strong> County water services office</p>
+        <p style="font-size:13px"><strong>Witness:</strong> Community water committee</p>
+        <p style="font-size:13px"><strong>Ask:</strong> “Who is responsible for this water point, and when can the community expect a maintenance update?”</p>
+        <p style="font-size:11px;color:#8b9298;margin-top:8px">Source: Makueni County Government · checked 19 Sept · Unverified — illustrative</p>
+      </div>
     </div>
   </div>
 
@@ -144,7 +144,7 @@ li{margin-bottom:6px}
     <div class="brand-bar"></div>
     <div class="eyebrow">BOTTOM-UP: COMMUNITY ISSUES</div>
     <h2>Residents raise what's not working.</h2>
-    <div style="margin-top:24px" class="col-2">
+    <div class="col-2" style="margin-top:20px">
       <div>
         <div class="track-card" style="margin-bottom:12px">
           <h3>Borehole at Kathiani market has been dry three weeks</h3>
@@ -152,17 +152,17 @@ li{margin-bottom:6px}
         </div>
         <div class="track-card">
           <h3>Tender award for the feeder road not published</h3>
-          <p style="font-size:12px">Kumasi, Ghana · 2 votes · <strong style="color:#fbbf24">Open</strong></p>
+          <p style="font-size:12px">Kumasi, Ghana · 4 votes · <strong style="color:#fbbf24">Open</strong></p>
         </div>
       </div>
       <div>
         <h3 style="font-size:14px;color:#8b9298;margin-bottom:12px">GRADUATION</h3>
-        <ul style="font-size:12px;line-height:2;color:#8b9298">
+        <ul style="font-size:13px;line-height:2.1;color:#c6cbce">
           <li>① Resident raises an issue with no votes</li>
           <li>② At 3 votes → community-verified</li>
           <li>③ At 5 votes → promoted to official trail with holder + date</li>
         </ul>
-        <p style="font-size:11px;color:#8b9298;margin-top:16px">Votes are local. Without a relay, nobody else sees them. Every issue card says so.</p>
+        <p style="font-size:11px;color:#8b9298;margin-top:14px">Votes are local. Without a relay, nobody else sees them. Every issue card says so.</p>
       </div>
     </div>
   </div>
@@ -170,17 +170,15 @@ li{margin-bottom:6px}
   <div class="slide">
     <div class="brand-bar"></div>
     <div class="eyebrow">DATA FOUNDATIONS</div>
-    <h2>5 geospatial layers,<br><strong>257,153 features.</strong></h2>
+    <h2>4 bundled layers, <strong>14,288 points.</strong></h2>
     <p style="margin-top:8px">Every data-layer point is listed in the Trails tab and trackable as a trail.</p>
     <table>
-      <thead><tr><th>Layer</th><th>Source</th><th>Records</th><th>Status</th></tr></thead>
+      <thead><tr><th>Layer</th><th>Source</th><th>Licence</th><th>Points</th><th>Status</th></tr></thead>
       <tbody>
-        <tr><td style="color:#fb7185">♥ Health</td><td>HOT OSM via HDX</td><td>42,999</td><td style="color:#4ade80">✓ Live</td></tr>
-        <tr><td style="color:#38bdf8">🎓 Education</td><td>HOT OSM via HDX</td><td>209,267</td><td style="color:#4ade80">✓ Capped at 4K</td></tr>
-        <tr><td style="color:#20b8a6">💧 Water</td><td>HOT OSM via HDX</td><td>8,741</td><td style="color:#4ade80">✓ Live</td></tr>
-        <tr><td style="color:#fbbf24">⚡ Power</td><td>World Bank GPPP</td><td>228</td><td style="color:#4ade80">✓ Live</td></tr>
-        <tr><td style="color:#c084fc">🛒 Markets</td><td>ETH market centers</td><td>2,060</td><td style="color:#4ade80">✓ Live</td></tr>
-        <tr><td style="color:#8b9298">▦ Grid lines</td><td>Africa Infra Grid</td><td>0</td><td style="color:#fbbf24">⚠ Corrupted</td></tr>
+        <tr><td>Health facilities</td><td>HOT OSM via HDX</td><td>ODbL 1.0</td><td>8,000</td><td style="color:#4ade80">Bundled</td></tr>
+        <tr><td>Schools</td><td>HOT OSM via HDX</td><td>ODbL 1.0</td><td>4,000</td><td style="color:#4ade80">Bundled</td></tr>
+        <tr><td>Power plants</td><td>WRI Global Power DB</td><td>CC BY 4.0</td><td>228</td><td style="color:#4ade80">Bundled</td></tr>
+        <tr><td>Market centres</td><td>Ethiopia markets, HDX</td><td>CC0 1.0</td><td>2,060</td><td style="color:#4ade80">Bundled</td></tr>
       </tbody>
     </table>
   </div>
@@ -190,7 +188,7 @@ li{margin-bottom:6px}
     <div class="eyebrow">THE PACKET IS THE PRODUCT</div>
     <h2>Everything else is scaffolding for<br><strong>the thing the user leaves with.</strong></h2>
     <div class="col-3" style="margin-top:24px">
-      <div class="track-card"><h3>Packet</h3><p style="font-size:12px">The full brief with a next-step sequence. Exports as PDF.</p></div>
+      <div class="track-card"><h3>Packet · PDF</h3><p style="font-size:12px">The full brief with a next-step sequence and acknowledgement lines. Exports as PDF, offline.</p></div>
       <div class="track-card"><h3>WhatsApp</h3><p style="font-size:12px">Short, forwardable, keeps the source and the check date.</p></div>
       <div class="track-card"><h3>SMS</h3><p style="font-size:12px">One line for a basic phone. Source + question intact.</p></div>
     </div>
@@ -202,13 +200,13 @@ li{margin-bottom:6px}
 
   <div class="slide">
     <div class="brand-bar"></div>
-    <div class="eyebrow">OFFLINE & USB</div>
+    <div class="eyebrow">OFFLINE &amp; USB</div>
     <h2>It runs from a USB stick.<br><strong>No server, no install, no network.</strong></h2>
     <div class="col-2" style="margin-top:24px">
       <div>
         <h3>Two builds, genuinely different</h3>
         <div class="track-card" style="margin-top:12px">
-          <h3 style="font-size:13px;color:#8b9298">Single-file (0.65 MB)</h3>
+          <h3 style="font-size:13px;color:#8b9298">Single-file (0.66 MB)</h3>
           <p style="font-size:12px">Double-click trail-offline.html. Boots because nothing is requested at runtime.</p>
         </div>
         <div class="track-card" style="margin-top:8px">
@@ -217,12 +215,12 @@ li{margin-bottom:6px}
         </div>
       </div>
       <div>
-        <h3 style="font-size:14px;color:#8b9298">30+ TESTS</h3>
-        <ul style="font-size:12px;line-height:1.8;color:#8b9298">
+        <h3 style="font-size:14px;color:#8b9298">VERIFIED, NOT ASSUMED</h3>
+        <ul style="font-size:12px;line-height:1.9;color:#c6cbce">
           <li>Offline cold-start over file://</li>
           <li>Persistent local storage</li>
           <li>Render correctness (markers, labels, icons)</li>
-          <li>Layer panel toggle → marker count</li>
+          <li>Layer toggle → marker count</li>
           <li>All tabs functional</li>
           <li>No console errors</li>
         </ul>
@@ -234,26 +232,82 @@ li{margin-bottom:6px}
     <div class="brand-bar"></div>
     <div class="eyebrow">PROVENANCE RULES</div>
     <h2>Five rules, never broken.</h2>
-    <div style="margin-top:20px">
-      <div class="track-card" style="margin-bottom:8px"><strong>①</strong> A source is never shown as verified unless it is. 0 of 14 seeded records are independently checked — stated in the UI.</div>
-      <div class="track-card" style="margin-bottom:8px"><strong>②</strong> "Unchecked" is distinct from "stale". Freshness is computed against each source's own cadence.</div>
-      <div class="track-card" style="margin-bottom:8px"><strong>③</strong> Limitations are a required field. Every record states what it does not tell you.</div>
-      <div class="track-card" style="margin-bottom:8px"><strong>④</strong> Confidence and importance are separate. How much it matters vs how much it can be trusted.</div>
-      <div class="track-card"><strong>⑤</strong> A gap never becomes a claim. Unknown = "unknown". No URL = "No URL".</div>
+    <div style="margin-top:18px">
+      <div class="rule"><b>①</b><span>A source is never shown as verified unless it is. 0 of 14 seeded records are independently checked — stated in the UI.</span></div>
+      <div class="rule"><b>②</b><span>“Unchecked” is distinct from “stale”. Freshness is computed against each source's own cadence.</span></div>
+      <div class="rule"><b>③</b><span>Limitations are a required field. Every record states what it does not tell you.</span></div>
+      <div class="rule"><b>④</b><span>Confidence and importance are separate. How much it matters vs how much it can be trusted.</span></div>
+      <div class="rule"><b>⑤</b><span>A gap never becomes a claim. Unknown reads “unknown”. No URL reads “No URL”.</span></div>
     </div>
   </div>
 
   <div class="slide">
     <div class="brand-bar"></div>
-    <div class="eyebrow">TECH & VERIFICATION</div>
-    <h2>React, Vite, no backend.</h2>
+    <div class="eyebrow">HOW IT WAS BUILT</div>
+    <h2>Solo-built, <strong>each tool doing what it's best at.</strong></h2>
+    <svg viewBox="0 0 920 210" width="100%" role="img" aria-label="Build pipeline: idea, research, skeleton, UI polish, features, audit, shipped" style="margin-top:14px">
+      <defs>
+        <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="#4ade80" />
+        </marker>
+      </defs>
+      <g font-family="-apple-system,'Segoe UI',system-ui,sans-serif" text-anchor="middle">
+        <g>
+          <rect x="4" y="30" width="132" height="112" rx="10" fill="#14191c" stroke="rgba(255,255,255,0.12)" />
+          <text x="70" y="72" font-size="13" font-weight="600" fill="#e6e8ea">Idea</text>
+          <text x="70" y="94" font-size="10.5" fill="#8b9298">solo concept</text>
+        </g>
+        <g>
+          <rect x="158" y="30" width="132" height="112" rx="10" fill="#14191c" stroke="rgba(255,255,255,0.12)" />
+          <text x="224" y="72" font-size="13" font-weight="600" fill="#e6e8ea">Research</text>
+          <text x="224" y="94" font-size="10.5" fill="#4ade80">ChatGPT + Grok</text>
+        </g>
+        <g>
+          <rect x="312" y="30" width="132" height="112" rx="10" fill="#14191c" stroke="rgba(255,255,255,0.12)" />
+          <text x="378" y="62" font-size="13" font-weight="600" fill="#e6e8ea">Skeleton</text>
+          <text x="378" y="84" font-size="10.5" fill="#4ade80">Hermes harness</text>
+          <text x="378" y="102" font-size="10.5" fill="#4ade80">DeepSeek V4 Flash</text>
+        </g>
+        <g>
+          <rect x="466" y="30" width="132" height="112" rx="10" fill="#14191c" stroke="rgba(255,255,255,0.12)" />
+          <text x="532" y="72" font-size="13" font-weight="600" fill="#e6e8ea">UI polish</text>
+          <text x="532" y="94" font-size="10.5" fill="#4ade80">GPT-5.5 Astra</text>
+        </g>
+        <g>
+          <rect x="620" y="30" width="132" height="112" rx="10" fill="#14191c" stroke="rgba(255,255,255,0.12)" />
+          <text x="686" y="72" font-size="13" font-weight="600" fill="#e6e8ea">Features</text>
+          <text x="686" y="94" font-size="10.5" fill="#4ade80">DeepSeek</text>
+        </g>
+        <g>
+          <rect x="774" y="30" width="132" height="112" rx="10" fill="#1d3b28" stroke="#4ade80" />
+          <text x="840" y="62" font-size="13" font-weight="600" fill="#e6e8ea">Audit + prod</text>
+          <text x="840" y="84" font-size="10.5" fill="#4ade80">Muse Spark 1.3</text>
+          <text x="840" y="102" font-size="10.5" fill="#4ade80">via OpenCode</text>
+        </g>
+        <g stroke="#4ade80" stroke-width="1.5">
+          <line x1="136" y1="86" x2="152" y2="86" marker-end="url(#arr)" />
+          <line x1="290" y1="86" x2="306" y2="86" marker-end="url(#arr)" />
+          <line x1="444" y1="86" x2="460" y2="86" marker-end="url(#arr)" />
+          <line x1="598" y1="86" x2="614" y2="86" marker-end="url(#arr)" />
+          <line x1="752" y1="86" x2="768" y2="86" marker-end="url(#arr)" />
+        </g>
+        <text x="460" y="178" font-size="11.5" fill="#8b9298">Runtime: fixed human-curated data · zero generative features · safety wording written by hand</text>
+      </g>
+    </svg>
+    <p class="pipe-cap">Every stage human-directed and verified — builds, logic tests, and a 30+ harness verification suite.</p>
+  </div>
+
+  <div class="slide">
+    <div class="brand-bar"></div>
+    <div class="eyebrow">TECH &amp; VERIFICATION</div>
+    <h2>React 19, Vite, no backend.</h2>
     <div class="col-2" style="margin-top:24px">
       <div>
         <h3>Stack</h3>
-        <ul style="font-size:12px;line-height:1.8;color:#8b9298">
-          <li>React 18 + Vite</li>
+        <ul style="font-size:13px;line-height:2;color:#8b9298">
+          <li>React 19 + Vite</li>
           <li>D3-geo (orthographic + Mercator)</li>
-          <li>SVG markers with &lt;use&gt; icon symbols</li>
+          <li>SVG markers with icon symbols</li>
           <li>Lucide icons</li>
           <li>Local storage (no backend)</li>
           <li>Service worker (offline cache)</li>
@@ -261,7 +315,7 @@ li{margin-bottom:6px}
       </div>
       <div>
         <h3>Build pipeline</h3>
-        <ul style="font-size:12px;line-height:1.8;color:#8b9298">
+        <ul style="font-size:13px;line-height:2;color:#8b9298">
           <li>Python ingest → GeoJSON simplification</li>
           <li>Vite build → dist/</li>
           <li>Portable bundler → single-file HTML</li>
@@ -291,8 +345,8 @@ li{margin-bottom:6px}
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;height:100%">
       <div class="brand" style="margin-bottom:24px;font-size:18px"><span>TRAIL</span><b>AFRICA</b></div>
       <h1>A fact should lead somewhere.</h1>
-      <p class="tagline" style="color:#4ade80;margin:16px 0 24px">Trusted civic information, across Africa.</p>
-      <p style="max-width:560px">13 countries. 14 trails. 5 data layers. 257K features. Zero server. Runs from a USB stick. Leaves with a packet you can send.</p>
+      <p style="color:#4ade80;margin:16px 0 24px">Trusted civic information, across Africa.</p>
+      <p style="max-width:560px">13 countries. 14 trails. 4 data layers. 14K points. Zero server. Runs from a USB stick. Leaves with a packet you can send.</p>
       <div style="margin-top:32px;font-size:11px;color:#8b9298">github.com/Prodigeezyxx/trail · OSF × Andela · Sep 2026</div>
     </div>
   </div>

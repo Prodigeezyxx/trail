@@ -14,12 +14,15 @@ import fs from 'fs';
   console.log('Slides in HTML: ' + slideCount);
 
   const out = path.resolve('docs/pitch-deck.pdf');
+  // 16:9 pages match the fixed slide geometry in pitch-deck.html exactly,
+  // so every slide fills precisely one page with no breaks or bands.
   await page.pdf({
     path: out,
-    format: 'A4',
-    landscape: false,
+    width: '13.33in',
+    height: '7.5in',
     printBackground: true,
-    margin: { top: '0.3in', right: '0.3in', bottom: '0.3in', left: '0.3in' }
+    margin: { top: '0', right: '0', bottom: '0', left: '0' },
+    preferCSSPageSize: true
   });
 
   const stats = fs.statSync(out);
