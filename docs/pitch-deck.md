@@ -96,6 +96,17 @@ Solo-built with a pipeline of AI tools, each picked for what it is good at:
 
 Nothing in the app generates content at runtime. All data is fixed and human-curated, verification statuses reflect real fetch checks, and safety wording was written deliberately.
 
+```mermaid
+flowchart LR
+    A["Idea"] --> B["Research<br/>ChatGPT + Grok"]
+    B --> C["Planning + skeleton<br/>Hermes harness · DeepSeek V4 Flash"]
+    C --> D["UI + polish<br/>GPT-5.5 Astra"]
+    D --> E["Features<br/>DeepSeek"]
+    E --> F["Audit + prod pass<br/>Muse Spark 1.3 via OpenCode"]
+    F --> G["Trail Africa<br/>shipped"]
+    G --> H["Runtime: fixed data<br/>no generative features"]
+```
+
 ## 9. Roadmap
 
 1. **Relay (opt-in):** sync votes/issues between devices without breaking the

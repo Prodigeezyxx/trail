@@ -207,6 +207,23 @@ scripts/repair-grid.py       repairs corrupted africagrid.geojson
 verify/                      30+ Playwright-based verification harnesses
 ```
 
+## How it was built
+
+Solo-built with a pipeline of AI tools, each picked for what it is good at.
+Nothing generates content at runtime: the app ships a fixed, human-curated
+data bundle, and every verification status below reflects a real check.
+
+```mermaid
+flowchart LR
+    A["Idea"] --> B["Research<br/>ChatGPT + Grok"]
+    B --> C["Planning + skeleton<br/>Hermes harness · DeepSeek V4 Flash"]
+    C --> D["UI + polish<br/>GPT-5.5 Astra"]
+    D --> E["Features<br/>DeepSeek"]
+    E --> F["Audit + prod pass<br/>Muse Spark 1.3 via OpenCode"]
+    F --> G["Trail Africa<br/>shipped"]
+    G --> H["Runtime: fixed data<br/>no generative features"]
+```
+
 ## Compliance
 
 Architecture is our own. Geometry is Natural Earth (public domain). Fonts are
