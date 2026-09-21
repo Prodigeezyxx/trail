@@ -16,6 +16,10 @@ import {
   PROMOTE_THRESHOLD, trackById, layerById,
 } from "./data";
 import africaGeo from "./data/africa.json";
+import {
+  DATA_SOURCES, PATHWAYS_BY_CATEGORY, SAFETY_GUIDES, SOURCE_WARNINGS,
+  sourceById, verifiedCount,
+} from "./sources";
 import "@fontsource-variable/dm-sans/wght.css";
 import "@fontsource-variable/manrope/wght.css";
 
@@ -252,6 +256,7 @@ export default function App() {
   const [now, setNow] = useState(new Date());
   const [issueFocus, setIssueFocus] = useState(null);
   const [report, setReport] = useState(null);
+  const [reportCat, setReportCat] = useState("corruption");
 
   const today = date(day);
   const allTrails = useMemo(() => [
@@ -768,7 +773,45 @@ export default function App() {
               </div>
               <div className="footnote">
                 <div className="eyebrow">ABOUT THIS BUNDLE</div>
-                <p>Data bundled {short(BUNDLE_DATE)}. {checkedCount} of {allTrails.length} sources independently checked by this project; the rest are recorded with their URL and marked unverified. A record is never shown as verified unless it is.</p>
+                <p>Data bundled {short(BUNDLE_DATE)}. {checkedCount} of {allTrails.length} record sources independently checked; the rest are recorded with their URL and marked unverified. A record is never shown as verified unless it is.</p>
+              </div>
+
+              <div className="datasets">
+                <div className="eyebrow">PUBLIC DATA SOURCES · {verifiedCount()} OF {DATA_SOURCES.length} FETCH-VERIFIED ON 21 SEP 2026</div>
+                <p className="page-sub">
+                  The open datasets behind each layer. Every URL here was requested and its HTTP status recorded;
+                  anything that answered with a bot challenge, a login wall, an empty JavaScript shell or an error
+                  is marked unverified and says why.
+                </p>
+                {TRACKS.map((t) => {
+                  const list = DATA_SOURCES.filter((s) => s.track === t.id);
+                  if (!list.length) return null;
+                  return (
+                    <div className="dataset-group" key={t.id}>
+                      <div className="dataset-track" style={{ color: t.color }}>{t.name}</div>
+                      {list.map((s) => (
+                        <div className={"dataset-row " + (s.verified ? "" : "unverified")} key={s.id}>
+                          <span className="dataset-flag">
+                            {s.verified ? <CircleCheck size={13} /> : <AlertTriangle size={13} />}
+                          </span>
+                          <div className="dataset-mid">
+                            <strong>{s.name}</strong>
+                            <small>{s.licence} · {s.cadence}</small>
+                            {s.note && <em>{s.note}</em>}
+                          </div>
+                          <a href={s.url} target="_blank" rel="noopener noreferrer">Open<ExternalLink size={11} /></a>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })}
+                <div className="notice warn">
+                  <AlertTriangle size={15} />
+                  <div>
+                    <strong>What we could not verify</strong>
+                    {SOURCE_WARNINGS.map((w) => <p key={w}>— {w}</p>)}
+                  </div>
+                </div>
               </div>
             </section>
           )}
@@ -807,7 +850,8 @@ export default function App() {
               }}>
                 <div className="form-grid">
                   <label>What is this about?
-                    <select name="category" defaultValue="corruption">
+                    <select name="category" value={REPORT_CATEGORIES.find((c) => c.id === reportCat)?.label}
+                            onChange={(e) => setReportCat(REPORT_CATEGORIES.find((c) => c.label === e.target.value)?.id || "corruption")}>
                       {REPORT_CATEGORIES.map((c) => <option key={c.id} value={c.label}>{c.label}</option>)}
                     </select>
                   </label>
@@ -834,6 +878,59 @@ export default function App() {
                   </button>
                 </div>
               </form>
+
+              <div className="pathways">
+                <div className="eyebrow">WHERE THIS CAN GO</div>
+                <p className="page-sub">
+                  Verified routes for this kind of report. Each was fetched and its status recorded on 21 Sep 2026.
+                  You carry the record there yourself — Trail cannot send it.
+                </p>
+                <div className="pathway-list">
+                  {(PATHWAYS_BY_CATEGORY[reportCat] || []).map((id) => {
+                    const s = sourceById(id);
+                    if (!s) return null;
+                    return (
+                      <div className={"pathway " + (s.verified ? "" : "unverified")} key={id}>
+                        <span className="dataset-flag">
+                          {s.verified ? <CircleCheck size={13} /> : <AlertTriangle size={13} />}
+                        </span>
+                        <div className="dataset-mid">
+                          <strong>{s.name}</strong>
+                          <small>{s.verified ? "Verified route" : "Unverified — do not rely on this yet"}</small>
+                          {s.note && <em>{s.note}</em>}
+                        </div>
+                        <a href={s.url} target="_blank" rel="noopener noreferrer">Open<ExternalLink size={11} /></a>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="eyebrow" style={{ marginTop: "18px" }}>BEFORE YOU SEND ANYTHING</div>
+                <div className="pathway-list">
+                  {SAFETY_GUIDES.map((id) => {
+                    const s = sourceById(id);
+                    if (!s) return null;
+                    return (
+                      <div className="pathway" key={id}>
+                        <span className="dataset-flag"><ShieldCheck size={13} /></span>
+                        <div className="dataset-mid">
+                          <strong>{s.name}</strong>
+                          <small>{s.note || "Device and metadata guidance"}</small>
+                        </div>
+                        <a href={s.url} target="_blank" rel="noopener noreferrer">Open<ExternalLink size={11} /></a>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="notice warn">
+                  <AlertTriangle size={15} />
+                  <div>
+                    <strong>Anonymity is not guaranteed anywhere in this list</strong>
+                    <p>No state-run complaint mechanism could be confirmed to accept a genuinely anonymous submission — not one, across the countries researched. If being identified would put you at risk, contact a digital-security helpline or a defender-protection organisation before you contact anyone else. That is what they exist for.</p>
+                  </div>
+                </div>
+              </div>
 
               {report && (
                 <div className="report-result">
