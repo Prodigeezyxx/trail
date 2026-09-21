@@ -111,9 +111,17 @@ function GodsEye({ records, selected, onPick, onSelect, issues = [] }) {
 
   const near = (coords) => !centre || geoDistance(coords, centre) < Math.PI / 2 - 0.05;
 
-  const down = (e) => { drag.current = { x: e.clientX, y: e.clientY, rot }; setDragging(true); e.currentTarget.setPointerCapture?.(e.pointerId); };
+  // Capture lazily: grabbing pointer capture on pointerdown retargets the
+  // follow-up click to the background, so marker clicks would never arrive
+  // and the detail panel would sit stuck on the default record. Capture only
+  // once the pointer has actually moved into a drag.
+  const down = (e) => { drag.current = { x: e.clientX, y: e.clientY, rot, captured: false, el: e.currentTarget }; setDragging(true); };
   const move = (e) => {
     const d = drag.current; if (!d) return;
+    if (!d.captured && Math.abs(e.clientX - d.x) + Math.abs(e.clientY - d.y) > 5) {
+      d.captured = true;
+      d.el?.setPointerCapture?.(e.pointerId);
+    }
     const k = 0.32 / zoom;
     setRot([d.rot[0] + (e.clientX - d.x) * k, clamp(d.rot[1] - (e.clientY - d.y) * k, -70, 70)]);
   };
@@ -293,7 +301,15 @@ export default function App() {
   const [enabled, setEnabled] = useState(layers.map((l) => l.id));
   const [country, setCountry] = useState("All Africa");
   const [trackFilter, setTrackFilter] = useState("all");
-  const [view, setView] = useState("Globe");
+  const [view, setView] = useState("Map");
+  // Flat-map viewport: zoom + pan. The globe keeps its own rotate/zoom state.
+  const [mapZoom, setMapZoom] = useState(1);
+  const [mapPan, setMapPan] = useState([0, 0]);
+  const mapDrag = useRef(null);
+  const mapMoved = useRef(false);
+  const mapSvgRef = useRef(null);
+  const zoomMap = (d) => setMapZoom((z) => clamp(+(z + d).toFixed(2), 1, 6));
+  const resetMapView = () => { setMapZoom(1); setMapPan([0, 0]); };
   const [day, setDay] = useState(21);
   const [files, setFiles] = useState(load);
   const [issues, setIssues] = useState(() => { try { return loadIssues(localStorage); } catch { return structuredClone([]); } });
@@ -427,6 +443,18 @@ export default function App() {
     return () => window.removeEventListener("afterprint", clear);
   }, []);
   useEffect(() => {
+    // Wheel-zoom on the flat map (native listener so we can preventDefault
+    // the page scroll while zooming; React's synthetic wheel is passive).
+    const el = mapSvgRef.current;
+    if (!el || view !== "Map") return;
+    const onWheel = (e) => {
+      e.preventDefault();
+      setMapZoom((z) => clamp(+(z - Math.sign(e.deltaY) * 0.25).toFixed(2), 1, 6));
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [view]);
+  useEffect(() => {
     if (!printDoc) return;
     // Let the sheet render before opening the dialog, so print preview has content.
     const t = setTimeout(() => window.print(), 60);
@@ -448,7 +476,28 @@ export default function App() {
   );
   const flatPath = useMemo(() => geoPath(projection), [projection]);
 
+  // Flat-map pan gestures: screen px → viewBox units via the svg's bounding rect.
+  const mapDown = (e) => {
+    // No capture here — see the globe note above. A plain click must reach
+    // the marker untouched; capture engages only once this becomes a drag.
+    mapDrag.current = { x: e.clientX, y: e.clientY, pan: mapPan, captured: false, el: e.currentTarget };
+    mapMoved.current = false;
+  };
+  const mapMove = (e) => {
+    const d = mapDrag.current; if (!d) return;
+    if (Math.abs(e.clientX - d.x) + Math.abs(e.clientY - d.y) > 5) {
+      mapMoved.current = true;
+      if (!d.captured) { d.captured = true; d.el?.setPointerCapture?.(e.pointerId); }
+    }
+    const rect = mapSvgRef.current?.getBoundingClientRect();
+    const k = rect && rect.width ? GW / rect.width : 1;
+    setMapPan([d.pan[0] + (e.clientX - d.x) * k, d.pan[1] + (e.clientY - d.y) * k]);
+  };
+  const mapUp = (e) => { mapDrag.current = null; e.currentTarget.releasePointerCapture?.(e.pointerId); };
+
   const pick = (id) => {
+    // A map drag ending on a marker must pan, not select.
+    if (mapMoved.current) { mapMoved.current = false; return; }
     if (connect && id !== selected) { setLinks((p) => (p.includes(id) ? p.filter((i) => i !== id) : [...p, id])); return; }
     setSelected(id); setIssueFocus(null); setLinks([]);
     // data-layer points have ids like "health-0" — show their detail in the panel
@@ -744,34 +793,39 @@ export default function App() {
                       <>
                         <div className="atlas-heading">
                           <div className="eyebrow">TRAIL AFRICA · {COUNTRIES.length} COUNTRIES IN SCOPE</div>
-                          <p>
-                            {view === "Globe"
-                              ? "Drag to turn. Brighter countries are the ones this build covers."
-                              : "Tap a marker for its trail. Dimmed countries are context only."}
-                          </p>
+                            <p>
+                              {view === "Globe"
+                                ? "Drag to turn. Brighter countries are the ones this build covers."
+                                : "Tap a marker for its trail. Drag to pan, scroll or use + to zoom."}
+                            </p>
                         </div>
                         {view === "Globe" ? (
                           <GodsEye records={allMarkers} issues={visibleIssues} selected={selected} onPick={pick} onSelect={(i) => { setIssueFocus(i); setModal("issueView"); }} />
                         ) : (
-                          <svg className="africa-map" viewBox={`0 0 ${GW} ${GH}`} role="group" aria-label="Africa civic map">
-                            <g>
+                          <svg className="africa-map pannable" ref={mapSvgRef} viewBox={`0 0 ${GW} ${GH}`} role="group" aria-label="Africa civic map. Drag to pan, scroll to zoom."
+                               onPointerDown={mapDown} onPointerMove={mapMove} onPointerUp={mapUp} onPointerCancel={mapUp}>
+                            <g transform={`translate(${GCX + mapPan[0]} ${GCY + mapPan[1]}) scale(${mapZoom}) translate(${-GCX} ${-GCY})`}>
                               {CONTEXT.map((f) => <path key={f.id} className="country context" d={flatPath(f) || ""} />)}
                               {COVERED.map((f) => <path key={f.id} className="country covered" d={flatPath(f) || ""} />)}
                               {COVERED.map((f) => {
                                 const p = projection(geoCentroid(f));
                                 return p ? (
-                                  <text className="country-label" key={"lb" + f.id} x={p[0]} y={p[1]}>
-                                    {f.properties.name.toUpperCase()}
-                                  </text>
+                                  <g key={"lb" + f.id} transform={`translate(${p[0]},${p[1]}) scale(${1 / mapZoom})`}>
+                                    <text className="country-label" x="0" y="0">
+                                      {f.properties.name.toUpperCase()}
+                                    </text>
+                                  </g>
                                 ) : null;
                               })}
                               {visibleIssues.map((i) => {
                                 const p = projection(i.coords); if (!p) return null;
                                 return (
                                   <g key={i.id} className="issue-pin" transform={`translate(${p[0]},${p[1]})`}
-                                     onClick={() => { setIssueFocus(i); setModal("issueView"); }} role="button" tabIndex="0"
+                                     onClick={() => { if (mapMoved.current) { mapMoved.current = false; return; } setIssueFocus(i); setModal("issueView"); }} role="button" tabIndex="0"
                                      aria-label={`Community issue: ${i.title}`}>
-                                    <circle r="7" /><circle className="pulse" r="12" />
+                                    <g transform={`scale(${1 / mapZoom})`}>
+                                      <circle r="7" /><circle className="pulse" r="12" />
+                                    </g>
                                   </g>
                                 );
                               })}
@@ -786,20 +840,25 @@ export default function App() {
                                      style={{ "--pin": layerMeta?.color || trackColor(x.track) }}
                                      transform={`translate(${p[0]},${p[1]})`} role="button" tabIndex="0"
                                      aria-label={`${x.title}, ${x.place}`} onClick={() => pick(x.id)}>
-                                    {isDataPoint ? (
-                                      <>
-                                        <circle className="halo" r={isSel ? 18 : 13} opacity="0.25" />
-                                        {iconName && <use href={`#li-${iconName}`} x="-7" y="-7" width="14" height="14" stroke="var(--pin)" fill="var(--pin)" />}
-                                      </>
-                                    ) : (
-                                      <>
-                                        <circle className="halo" r={isSel ? 24 : 15} />
-                                        <circle className="ring" r={isSel ? 11 : 8} />
-                                        <circle className="core" r={isSel ? 4 : 3} />
-                                        <rect className="pin-label-bg" x="16" y="-11" width={isSel ? 92 : 78} height="22" rx="4" />
-                                        <text className="pin-label" x="24" y="3">{x.place.split(",")[0].replace(" County", "")}</text>
-                                      </>
-                                    )}
+                                    {/* Counter-scale so the artwork holds a constant screen size:
+                                        without this the halos/rings/icons/labels grow with the
+                                        map and swallow their neighbours at 3–6×. */}
+                                    <g transform={`scale(${1 / mapZoom})`}>
+                                      {isDataPoint ? (
+                                        <>
+                                          <circle className="halo" r={isSel ? 18 : 13} opacity="0.25" />
+                                          {iconName && <use href={`#li-${iconName}`} x="-7" y="-7" width="14" height="14" stroke="var(--pin)" fill="var(--pin)" />}
+                                        </>
+                                      ) : (
+                                        <>
+                                          <circle className="halo" r={isSel ? 24 : 15} />
+                                          <circle className="ring" r={isSel ? 11 : 8} />
+                                          <circle className="core" r={isSel ? 4 : 3} />
+                                          <rect className="pin-label-bg" x="16" y="-11" width={isSel ? 92 : 78} height="22" rx="4" />
+                                          <text className="pin-label" x="24" y="3">{x.place.split(",")[0].replace(" County", "")}</text>
+                                        </>
+                                      )}
+                                    </g>
                                   </g>
                                 );
                               })}
@@ -808,6 +867,15 @@ export default function App() {
                         )}
                         {view !== "List" && (
                           <div className="map-tools">
+                            {view === "Map" && (
+                              <>
+                                <button aria-label="Zoom in" onClick={() => zoomMap(0.5)}><Plus size={16} /></button>
+                                <button aria-label="Zoom out" onClick={() => zoomMap(-0.5)}><Minus size={16} /></button>
+                                {(mapZoom !== 1 || mapPan[0] !== 0 || mapPan[1] !== 0) && (
+                                  <button aria-label="Reset map view" onClick={resetMapView}><RefreshCw size={14} /></button>
+                                )}
+                              </>
+                            )}
                             <button aria-label="Connect" className={connect ? "active" : ""} onClick={() => { setConnect(!connect); setToast("Select another trail to link it."); }}><Link2 size={16} /></button>
                             <button aria-label="Reset" onClick={() => { setCountry("All Africa"); setEnabled(layers.map((l) => l.id)); setTrackFilter("all"); }}><Crosshair size={16} /></button>
                           </div>

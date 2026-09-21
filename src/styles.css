@@ -250,6 +250,8 @@ main { padding: 22px 18px 60px; max-width: 1500px; }
 .atlas-heading .eyebrow { color: #5f7a68; margin-bottom: 5px; }
 .atlas-heading p { font-size: 10.5px; color: var(--dim); margin: 0; }
 .africa-map { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; }
+.africa-map.pannable { cursor: grab; touch-action: none; user-select: none; }
+.africa-map.pannable:active { cursor: grabbing; }
 .country { fill: #16301f; stroke: #2d5c3a; stroke-width: 0.9; stroke-linejoin: round; }
 .country-label { font-size: 7.5px; letter-spacing: 1px; fill: #4d6b55; text-anchor: middle; pointer-events: none; }
 .ocean {

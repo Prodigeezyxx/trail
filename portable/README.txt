@@ -4,7 +4,7 @@ TRAIL AFRICA — offline copies
 TWO DIFFERENT THINGS SIT IN THIS FOLDER. PICK THE RIGHT ONE.
 
 1) trail-offline.html        <- START HERE to put it on a USB stick
-   ONE file, 0.65 MB. Double-click it. That is the whole procedure.
+   ONE file, 0.66 MB. Double-click it. That is the whole procedure.
    JavaScript, CSS, both fonts and the Africa map geometry are all
    inside that one file, so the app boots with nothing requested.
    No install, no server, no internet, no admin rights.
